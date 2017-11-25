@@ -1,0 +1,28 @@
+package testOut
+
+import (
+	"bytes"
+	"fmt"
+)
+
+{{< first }}
+fmt.Println("Here is some go code.")
+{{
+Here is some text to print
+}}
+{{end}}
+
+func TestSub(buf *bytes.Buffer) {
+{{
+	Print me.
+}}
+
+	myTest2(buf)
+}
+
+func myTest2(buf *bytes.Buffer) {
+{{
+Substituted:
+}}
+{{> first }}
+}

@@ -1,0 +1,24 @@
+package testOut
+
+import (
+	"bytes"
+	"fmt"
+)
+
+{{: "testInclude.inc" }}
+
+func TestInclude(buf *bytes.Buffer) {
+{{
+The end.
+}}
+
+{{> aBlock }}
+
+{{# the following should be found in the inc directory by the -I flag }}
+{{: "testInclude2.inc" }}
+
+{{
+{{# Including an html file in text mode }}
+{{: "testInclude3.html" }}
+}}
+}

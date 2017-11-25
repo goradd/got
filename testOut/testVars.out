@@ -1,0 +1,36 @@
+The end.
+    This is a named block.
+	<p>
+	Escaped html &lt;
+	</p>
+
+<p>This is text<br>
+that is both escaped and has<br>
+html paragraphs and breaks inserted.<br>
+</p>
+
+
+<html>
+<head>
+
+</head>
+<body>
+<p>
+    A typical html document
+</p>
+</body>
+</html>
+Here is some code wrapping text escaping to go.<p>
+Escaped html &lt;
+</p>
+<p>This is text<br>
+	that is both escaped and has<br>
+	html paragraphs and breaks inserted.<br>
+</p>
+	Print me.
+Substituted:
+Here is some text to print
+Evaluates to a stringHere is a number: -5
+And another: 6
+And a float: 7
+Stringer: something

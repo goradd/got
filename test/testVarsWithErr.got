@@ -1,0 +1,33 @@
+package testOut
+
+import (
+	"bytes"
+	"fmt"
+)
+
+func givesStringWithErr() (string,error) {
+	return "Me with no escaping", nil
+}
+
+func givesIntWithErr() (int,error) {
+	return -5, nil
+}
+
+func givesFloatWithErr() (float32, error) {
+	return 6.4, nil
+}
+
+func TestVarsWithErr(buf *bytes.Buffer) error {
+{{= "Evaluates to a string" }}
+
+{{
+Here is the number: {{ie givesIntWithErr() }}
+And another: {{se givesStringWithErr() }}
+And a float: {{fe  givesFloatWithErr() }}
+}}
+
+{{# Here is a comment }}
+	return nil // no err
+}
+
+
