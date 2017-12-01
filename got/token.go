@@ -46,6 +46,11 @@ const (
 	itemComment
 	itemEOF
 	itemBackup
+
+	itemIf
+	//itemEndIf
+	itemElse
+
 )
 
 var tokens map[string]item
@@ -135,6 +140,10 @@ func init() {
 
 	tokens["{{-"] = item{typ: itemBackup} 		// Can be followed by a number to indicate how many chars to backup
 	tokens["{{backup"] = item{typ: itemBackup}  // Can be followed by a number to indicate how many chars to backup
+
+	tokens["{{if"] = item{typ: itemIf} 		// Converted to a go statement
+	tokens["{{else"] = item{typ: itemElse}
+	//tokens["{{if}}"] = item{typ: itemEndIf}
 
 
 	tokens["}}"] = item{typ: itemEnd} // need to check this for white space BEFORE instead of after.

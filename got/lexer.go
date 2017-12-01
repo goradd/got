@@ -106,7 +106,13 @@ func (l *lexer) emit(i item) {
 
 }
 
+func (l *lexer) emitRun(prefix string, suffix string) {
+	var i = item{typ:itemRun, val:prefix + l.input[l.start:l.pos] + suffix}
+	l.items <- i
+	l.start = l.pos
+	//fmt.Printf("%v", item)
 
+}
 
 
 // Starting state. We start in GO mode.
@@ -172,6 +178,12 @@ func (l *lexer)lexTag(priorState stateFn) stateFn {
 		l.emit(i)
 		l.ignoreOneSpace()
 		return l.lexText(priorState)
+
+	case itemIf:
+		return l.lexIf(priorState)
+
+	case itemElse:
+		return l.lexElse(priorState)
 
 	default:
 		l.emit(i)
@@ -372,9 +384,35 @@ func (l *lexer) lexComment(nextState stateFn) stateFn {
 	return nextState
 }
 
+func (l *lexer) lexIf(nextState stateFn) stateFn {
+	l.emitType(itemGo)
+	l.ignoreWhiteSpace()
+	l.openCount++
+	if l.isAtCloseTag() { // this is a closing tag
+		return l.lexGoExtra(nextState, " } ", "")
+	} else {
+		return l.lexGoExtra(nextState, " if ", " { ")
+	}
+}
+
+// lexElse lexes an else tag, which is {{else}}
+func (l *lexer) lexElse(nextState stateFn) stateFn {
+	l.ignore()
+	if !l.isAtCloseTag() {
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+	}
+
+	return l.lexGoExtra(nextState, " } else { ", "")
+}
+
+
 func (l *lexer) lexGo(nextState stateFn) stateFn {
+	return l.lexGoExtra(nextState, "", "")
+}
+
+func (l *lexer) lexGoExtra(nextState stateFn, prefix string, suffix string) stateFn {
 	l.acceptRun()
-	l.emitType(itemRun)
+	l.emitRun(prefix, suffix)
 
 	if l.peek() == eof {
 		return nil

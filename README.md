@@ -69,10 +69,13 @@ example:
 	got -I .;../tmpl;./projectTemplates file1.tmpl file2.tmpl
 ```
 ## Basic Syntax
-Template tags start with {{ and end with }}. You MUST have a space or newline after a begin tag and before an end tag.
+Template tags start with {{ and end with }}.
 
-A template starts in go mode. To send simple text or html to output, surround the text with {{ and }} tags.
-From within text mode, you can send out a go string value by surrounding the go code with {{= and }} tags.
+A template starts in go mode. To send simple text or html to output, surround the text with {{ and }} tags
+with a space or newline separating the tags from the surrounding text. Inside the brackets you will be in 
+text mode.
+From within text mode, you can send out a go value by surrounding the go code with {{ and }} tags without spaces
+separating the go code from the brackets.
 
 Text will get written to output by calling `buf.WriteString`. Got makes no assumptions
 as to how you declare the `buf` variable, it just needs to be available when the template text is declared.
@@ -89,9 +92,10 @@ package template
 import "bytes"
 
 func OutTemplate(buf *bytes.Buffer) {
+	var world string = "World"
 {{
 <p>
-    Hello World!
+    Hello {{world}}!
 </p>
 }}
 }
@@ -129,7 +133,7 @@ to help your templates have some human readable context to them.
 
 ### Static Text
 The following tags will send the surrounded text to `buf.WriteString`:
-- `{{` Passes text as written.
+- `{{` With a space or newline after it will begin to output text as written.
 - `{{!` or `{{esc` html escapes the text. Html reserved characters, like < or > are turned into html entities first. 
 This happens when the template is compiled, so that when the template runs, the string will already be escaped. 
 - `{{h` or `{{html` Converts the text to html by escaping reserved characters, surrounding double returns
@@ -195,7 +199,13 @@ that returns a value.
 - `{{f` or `{{float` Floating point number
 - `{{b` or `{{bool` Boolean value (will output "true" or "false")
 - `{{w` or `{{bytes` Byte slice
-- `{{v` or `{{stringer` Send any value that implements the Stringer interface
+- `{{v` or `{{stringer` or `{{`*go code*`}}` Send any value that implements the Stringer interface.
+	This can be slower than
+   the other tags since it uses fmt.Sprintf internally, so if this is a heavily used template, 
+   avoid it. Usually you will not notice a speed difference though. and the third option
+   can be very convenient.
+
+
 
 #### Escaping Dynamic Text
 
@@ -205,7 +215,7 @@ the output.
 - `{{!s` or `{{!string` Escape a go string and send to output. 
   - Example: `{{!s getUserInput() }}`
 - `{{!w` or `{{!bytes` Byte slice
-- `{{!v` or `{{!stringer` Any value that implements the Stringer interface
+- `{{!v` or `{{!stringer` Any value that implements the Stringer interface. 
 
 #### Capturing Errors
 
@@ -293,6 +303,13 @@ func OutTemplate(buf bytes.Buffer) {
 that many characters will be removed. This is useful to remove extraneous newlines. 
 For example, `{{- 4}}` will back up 4 characters. Also, if you end a line with this tag, it will
 join the line with the next line.
+- `{{if `*code*`}}` This is a convenience tag for surrounding text with a go "if" statement. To close the 
+  if, use `{{if}}`. You can put a `{{else}}` in between to have an if/else. These kinds of if/else statements
+  are easier to read than putting them inside of `{{g` tags.
+  
+Example: ```{{if plural }}We are{{else}}I am{{if}} awesome.```
+
+  
 
 ## Bigger Example
 
