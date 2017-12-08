@@ -397,8 +397,10 @@ func (l *lexer) lexIf(nextState stateFn) stateFn {
 
 // lexElse lexes an else tag, which is {{else}}
 func (l *lexer) lexElse(nextState stateFn) stateFn {
-	l.ignore()
-	if !l.isAtCloseTag() {
+	l.emitType(itemGo)
+	l.ignoreWhiteSpace()
+	l.openCount++
+	if !l.isAtCloseTag() { // TODO: else if
 		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
 	}
 
