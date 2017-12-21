@@ -48,8 +48,8 @@ const (
 	itemBackup
 
 	itemIf
-	//itemEndIf
 	itemElse
+	itemFor
 
 )
 
@@ -143,8 +143,8 @@ func init() {
 
 	tokens["{{if"] = item{typ: itemIf} 		// Converted to a go statement
 	tokens["{{else"] = item{typ: itemElse}
-	//tokens["{{if}}"] = item{typ: itemEndIf}
 
+	tokens["{{for"] = item{typ: itemFor} 		// Converted to a go statement
 
 	tokens["}}"] = item{typ: itemEnd} // need to check this for white space BEFORE instead of after.
 }

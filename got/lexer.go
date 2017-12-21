@@ -185,6 +185,9 @@ func (l *lexer)lexTag(priorState stateFn) stateFn {
 	case itemElse:
 		return l.lexElse(priorState)
 
+	case itemFor:
+		return l.lexFor(priorState)
+
 	default:
 		l.emit(i)
 		l.ignoreWhiteSpace()
@@ -406,6 +409,18 @@ func (l *lexer) lexElse(nextState stateFn) stateFn {
 
 	return l.lexGoExtra(nextState, " } else { ", "")
 }
+
+func (l *lexer) lexFor(nextState stateFn) stateFn {
+	l.emitType(itemGo)
+	l.ignoreWhiteSpace()
+	l.openCount++
+	if l.isAtCloseTag() { // this is a closing tag
+		return l.lexGoExtra(nextState, " } ", "")
+	} else {
+		return l.lexGoExtra(nextState, " for ", " { ")
+	}
+}
+
 
 
 func (l *lexer) lexGo(nextState stateFn) stateFn {
