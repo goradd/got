@@ -312,7 +312,7 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 		return l.errorf("No end block found")
 	}
 
-	namedBlocks[name] = strings.TrimSpace(l.input[l.start:l.start + offset])
+	namedBlocks[name] = l.input[l.start:l.start + offset]
 	l.start = l.start + offset + len(tokEndBlock)
 	l.pos = l.start
 
@@ -487,7 +487,11 @@ func (l *lexer) lexText(nextState stateFn) stateFn {
 	}
 
 	if l.peek() == eof {
-		return l.errorf("Looking for close tag, found end of file.")
+		if l.blockName != "" {
+			return nil
+		} else {
+			return l.errorf("Looking for close tag, found end of file.")
+		}
 	}
 
 

@@ -24,6 +24,7 @@ func TestVarsWithErr(buf *bytes.Buffer) error {
 	buf.WriteString("Evaluates to a string")
 
 	buf.WriteString(`Here is the number: `)
+
 	{
 		v, err := givesIntWithErr()
 		buf.WriteString(strconv.Itoa(v))
@@ -31,8 +32,10 @@ func TestVarsWithErr(buf *bytes.Buffer) error {
 			return err
 		}
 	}
+
 	buf.WriteString(`
 And another: `)
+
 	{
 		v, err := givesStringWithErr()
 		buf.WriteString(v)
@@ -40,8 +43,10 @@ And another: `)
 			return err
 		}
 	}
+
 	buf.WriteString(`
 And a float: `)
+
 	{
 		v, err := givesFloatWithErr()
 		buf.WriteString(strconv.FormatFloat(float64(v), 'g', -1, 64))
@@ -49,6 +54,7 @@ And a float: `)
 			return err
 		}
 	}
+
 	buf.WriteString(`
 `)
 

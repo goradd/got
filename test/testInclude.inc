@@ -10,3 +10,5 @@ func anIncludeTest(buf bytes.Buffer) {
     This is a named block.
 }}
 {{end}}
+
+{{< name }}smallBlock{{end}}

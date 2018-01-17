@@ -18,7 +18,9 @@ func TestStatic(buf *bytes.Buffer) {
 
 	buf.WriteString(`<p>
 `)
+
 	buf.WriteString(`Escaped html &lt;`)
+
 	buf.WriteString(`
 </p>
 `)

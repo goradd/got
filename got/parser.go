@@ -52,7 +52,7 @@ func outputRun(parent item, item item) string {
 
 	switch parent.typ {
 	case itemGo:
-		return item.val + "\n"	// straight go code
+		return item.val	// straight go code
 
 	case itemText:
 		/*
@@ -101,12 +101,12 @@ func outputValue(item item, val string) string {
 
 	if item.withError {
 		return fmt.Sprintf(
-			"{\nv, err := %s\n" +
+			"\n{\nv, err := %s\n" +
 			"%s\n" +
 			"if err != nil { return err}\n}\n", val,
 			fmt.Sprintf(writer, fmt.Sprintf(formatter, "v")))
 	} else {
-		return fmt.Sprintf("%s\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, val)))
+		return fmt.Sprintf("\n%s\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, val)))
 	}
 
 }
@@ -116,9 +116,9 @@ func outputText(item item, val string) string {
 		val = html.EscapeString(val)
 	}
 	if item.translate {
-		return "t.Translate(`" + val + "`, buf)\n"
+		return "\nt.Translate(`" + val + "`, buf)\n"
 	} else {
-		return "buf.WriteString(`" + val + "`)\n"
+		return "\nbuf.WriteString(`" + val + "`)\n"
 	}
 }
 
@@ -134,13 +134,13 @@ func outputHtml(item item, val string) string {
 	val = "<p>" + val + "</p>\n"
 
 	if item.translate {
-		return "t.Translate(buf, `" + val + "`)\n"
+		return "\nt.Translate(buf, `" + val + "`)\n"
 	} else {
-		return "buf.WriteString(`" + val + "`)\n"
+		return "\nbuf.WriteString(`" + val + "`)\n"
 	}
 
 }
 
 func outputTruncate(n string) string {
-	return fmt.Sprintf("buf.Truncate(buf.Len() - %s)\n", n)
+	return fmt.Sprintf("\nbuf.Truncate(buf.Len() - %s)\n", n)
 }
