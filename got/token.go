@@ -124,7 +124,7 @@ func init() {
 
 	tokens["{{begin}}"] = item{typ: itemStrictBlock}
 	tokens["{{end}}"] = item{typ: itemEndBlock}
-	tokens["{{begin"] = item{typ: itemNamedBlock} // must follow with a name and a close tag
+	tokens["{{define"] = item{typ: itemNamedBlock} // must follow with a name and a close tag
 	tokens["{{<"] = item{typ: itemNamedBlock} // must follow with a name and a close tag
 
 	tokens["{{>"] = item{typ: itemSubstitute} // must follow with a name and a close tag

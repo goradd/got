@@ -131,15 +131,24 @@ func (l *lexer)lexTag(priorState stateFn) stateFn {
 	var ok bool
 
 	if i, ok = tokens[a]; !ok {
-		// We could not find a tag, so we are going to assume it is a compressed "interface" tag of the form:
-		// {{SomeGoCodeWithValue}}, which will be somewhat similar to the built-in go template engine
-		// The result should be the same as a {{v tag, but we need to backup to point to the content of the tag
-		// This really slows down the template engine, but its convenient syntax
-		l.pos = pos
-		l.next()
-		l.next()
-		l.ignore()
-		i = tokens["{{v"]
+		// We could not find a tag, so it could be one of two things:
+		// - A custom tag we defined, or
+		// - A compressed "interface" tag of the form: {{SomeGoCodeWithValue}}, which will be somewhat similar to the built-in go template engine
+		if _, ok = namedBlocks[a[2:]]; ok {
+			// its a defined block
+			l.pos = pos
+			l.next()
+			l.next()
+			l.ignore()
+			i = tokens["{{>"]
+		} else {
+			// we are going to treat it as a go value
+			l.pos = pos
+			l.next()
+			l.next()
+			l.ignore()
+			i = tokens["{{v"] // a slow but convenient tag
+		}
 	}
 
 	switch i.typ {
@@ -307,6 +316,10 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 		return l.errorf("Block name cannot contain spaces")
 	}
 
+	if _,ok := tokens["{{" + name]; ok {
+		return l.errorf("Block name cannot be a tag name. Block name: %s")
+	}
+
 	offset := strings.Index(l.input[l.start:],tokEndBlock)
 	if offset == -1 {
 		return l.errorf("No end block found")
@@ -344,13 +357,16 @@ func (l *lexer) lexBackup(nextState stateFn) stateFn {
 
 func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 	l.ignoreSpace()
+	l.acceptTag()
+	name := l.currentString()
+	l.ignoreSpace()
 	l.acceptRun()
+	paramString := strings.TrimSpace(l.currentString())
 
 	if !l.isAtCloseTag() {
 		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
 	}
 
-	name := l.currentString()
 	l.ignoreCloseTag()
 
 	var block string
@@ -358,6 +374,14 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 
 	if block, ok = namedBlocks[name]; !ok {
 		return l.errorf("Named block not found: %s", name)
+	}
+
+	// If params are found, do the substitution
+	if paramString != "" {
+		var err error
+		if block, err = processParams(block, paramString); err != nil {
+			return l.errorf(err.Error())
+		}
 	}
 
 	l2 := &lexer{
@@ -373,6 +397,118 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 		return nil
 	}
 	return nextState
+}
+
+func processParams(in, paramString string) (out string, err error) {
+	paramString = strings.TrimSpace(paramString)
+	params,err := splitParams(paramString)
+
+	if err != nil {
+		return
+	}
+
+
+	var i int
+	var s string
+	for i,s = range params {
+		search := fmt.Sprintf("$%d", i + 1)
+		in = strings.Replace(in, search, s, -1)
+	}
+
+	// Default missing parameters to blanks
+	for j := i + 1; j < 9; j++ {
+		search := fmt.Sprintf("$%d", j + 1)
+		if strings.Index(in, search) != -1 {
+			in = strings.Replace(in, search, "", -1)
+		}
+	}
+	out = in
+	return
+}
+
+func splitParams(paramString string) (params []string, err error) {
+	var currentItem string
+	var cleanItem string
+
+	items := strings.Split(paramString, ",")
+
+	// Check to see if we split something surrounded by quotes
+	for _,item := range items {
+		cleanItem = strings.TrimSpace(item)
+		if len(cleanItem) == 0 {
+			if currentItem != "" {
+				currentItem += "," + item
+			} else {
+				params = append(params, cleanItem)
+			}
+		} else if cleanItem[0:1] == "\"" {
+			if cleanItem[len(cleanItem) - 1: ] ==  "\"" {
+				if len(cleanItem) > 1 && item[len(cleanItem) - 2 : len(cleanItem) - 1] !=  "\\" {
+					// an item bounded by quotes, so add it without the quotes
+					currentItem = item[1:len(cleanItem)-1]
+					currentItem = cleanEscapedQuotes(currentItem)
+					params = append(params, currentItem)
+					currentItem = ""
+				} else if len(cleanItem) == 1 {
+					// a single quote, so either begin or end with a blank item
+					if currentItem == "" {
+						// start the item
+						currentItem = ","
+					} else {
+						currentItem += ","
+						params = append(params, currentItem)
+						currentItem = ""
+					}
+				} else {
+					// an item started with a quote, but ended with an escaped quote, so build the string using the original non-cleaned item.
+					offset := strings.Index(item, "\"")
+					currentItem = cleanEscapedQuotes(item[offset + 1:])
+				}
+			} else {
+				// an item started with a quote, but not ended with a quote, so build the item
+				offset := strings.Index(item, "\"")
+				currentItem = cleanEscapedQuotes(item[offset + 1:])
+			}
+		} else {
+			if cleanItem[len(cleanItem)-1: ] == "\"" {
+				if len(cleanItem) > 1 && cleanItem[len(cleanItem)-2: len(cleanItem)-1] != "\\" {
+					// an item ending with a quote, but not started with a quote
+					if currentItem != "" {
+						lastOffset := strings.LastIndex(item, "\"")
+						currentItem += "," + cleanEscapedQuotes(item[:lastOffset])
+						params = append(params, currentItem)
+						currentItem = ""
+					} else {
+						err = fmt.Errorf("Defined block parameter ends with a quote but does not start with a quote: %s", item)
+						return
+					}
+				} else {
+					// an item ending with an escaped quote, so just include it.
+					if currentItem != "" {
+						currentItem += "," + cleanEscapedQuotes(item)
+					} else {
+						params = append(params, cleanItem)
+					}
+				}
+			} else {
+				// A normal item
+				if currentItem != "" {
+					currentItem += "," + cleanEscapedQuotes(item)
+				} else {
+					params = append(params, cleanItem)
+				}
+			}
+		}
+	}
+
+	if currentItem != "" {
+		err = fmt.Errorf("Defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
+	}
+	return
+}
+
+func cleanEscapedQuotes(s string) string {
+	return strings.Replace(s, "\\\"", "\"", -1)
 }
 
 func (l *lexer) lexComment(nextState stateFn) stateFn {

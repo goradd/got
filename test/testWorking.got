@@ -1,7 +1,0 @@
-package testOut
-
-{{< name }}Name{{end}}
-
-func {{> name }}Func() {
-	_ = "test"
-}

@@ -13,6 +13,7 @@ func TestSub(buf *bytes.Buffer) {
 `)
 
 	myTest2(buf)
+	myTest3(buf)
 }
 
 func myTest2(buf *bytes.Buffer) {
@@ -24,5 +25,14 @@ func myTest2(buf *bytes.Buffer) {
 
 	buf.WriteString(`Here is some text to print
 `)
+
+}
+
+func myTest3(buf *bytes.Buffer) {
+
+	buf.WriteString(`Substituted:
+`)
+
+	buf.WriteString("Me")
 
 }

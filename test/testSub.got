@@ -12,12 +12,17 @@ Here is some text to print
 }}
 {{end}}
 
+{{define second}}
+buf.WriteString("$1")
+{{end}}
+
 func TestSub(buf *bytes.Buffer) {
 {{
 	Print me.
 }}
 
 	myTest2(buf)
+	myTest3(buf)
 }
 
 func myTest2(buf *bytes.Buffer) {
@@ -25,4 +30,12 @@ func myTest2(buf *bytes.Buffer) {
 Substituted:
 }}
 {{> first }}
+}
+
+
+func myTest3(buf *bytes.Buffer) {
+{{
+Substituted:
+}}
+{{second Me}}
 }

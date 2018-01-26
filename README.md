@@ -6,6 +6,9 @@ or a go plugin. This approach creates extremely fast templates, especially as
 compared to go's standard template engine. It also gives you much more freedom than Go's temmplate
 engine, since at any time you can just switch to go code to do what you want.
 
+GoT's primary function is to support the goradd web framework, and that drives our
+design decisions. However, it is a standalone template engine that you may find useful. 
+
 - [Features](#features)
 - [Install](#install)
 - [Usage](#usage)
@@ -29,14 +32,18 @@ output.
 - **Error Support**. You can call into go code that returns errors, and have the template stop at that
 point and return an error to your wrapper function. The template will output its text up to that point,
 allowing you to easily see where in the template the error occurred.
-- **Include Files and Fragments**. Templates can include other templates. You can also create named
-fragments that you can include at will, and you can define these fragments in include files. Specify
+- **Include Files**. Templates can include other templates. Specify
 a list of search directories for the include files, allowing you to put include files in a variety of
 locations, and have include files in one directory that override another directory.
+- **Custom Tags**. You can define named fragments that you can include at will, 
+and you can define these fragments in include files. To use these fragments, you just
+use the name as the tag. This essentially gives you the ability to create your own template
+language. When you use a custom tag, you can also include parameters that will 
+replace placeholders in your fragment, giving you even more power to your custom tags. 
 
-Using other go libraries, you can have your templates compile when they are changed, you can
-use buffer pools to increase performance, you can write to io.Writers, and more. Since its go code,
-you can do what you imagine.
+Using other go libraries, you can have your templates compile when they are changed, 
+use buffer pools to increase performance, write to io.Writers, and more. Since the
+templates become go code, you can do what you imagine.
 
 
 ## Install
@@ -220,7 +227,7 @@ the output.
 #### Capturing Errors
 
 These tags will receive two results, the first a value to send to output, and the second an error
-type. If the error is not nil, processing will stop and the error will be returned. Therefore, these
+type. If the error is not nil, processing will stop and the error will be returned by the template function. Therefore, these
 tags expect to be included in a function that returns an error. Any template text
 processed so far will still be sent to the output buffer.
 
@@ -257,16 +264,18 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 
 Example: `{{: "myTemplate.inc" }}`
  
-### Named Fragments
-Named fragments start a block of text that can be included later in a template. The included text will
+### Defined Fragments
+Defined fragments start a block of text that can be included later in a template. The included text will
 be sent as is, and then processed in whatever mode the template processor is in, as if that text was simply
 inserted into the template at that spot. The fragment can be defined
-any time before it is included, including being defined in other include files.
-- `{{< fragName }}` or `{{begin fragName }}`Start a block called "fragName". The name is NOT surrounded by quotes, and cannot
+any time before it is included, including being defined in other include files. You can add optional parameters
+to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
+placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
+- `{{< fragName }}` or `{{define fragName }}`Start a block called "fragName". The name is NOT surrounded by quotes, and cannot
 contain any whitespace in the name. Blocks are ended with a `{{end}}` tag. The end tag must be just like
 that, with no spaces inside the tag.
-- `{{> fragName }}` or `{{putfragName }}` Substitute this tag for the given named fragment. If a named
-fragment is not defined with the given name, got will panic and stop compiling.
+- `{{> fragName param1,param2,...}}` or `{{put fragName param1,param2,...}}` or just `{{fragName param1,param2,...}}`  Substitute this tag for the given defined fragment. If a defined
+fragment is not defined with the given name, got will panic and stop compiling. param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
  
 #### Example
 ```go
@@ -277,8 +286,10 @@ This is my html body.
 </p>
 {{end}}
 
-{{< goCode }}
-buf.WriteString("Help!")
+{{< writeMe }}
+if $2 {
+	buf.WriteString("$1")
+}
 {{end}}
 
 
@@ -291,7 +302,7 @@ func OutTemplate(buf bytes.Buffer) {
 	</html>
 }}
 
-{{> goCode }}
+{{writeMe "Help Me!", true}}
 }
 ```
 
