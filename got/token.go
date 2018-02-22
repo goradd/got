@@ -121,6 +121,8 @@ func init() {
 	// go code straight pass through
 	tokens["{{g"] = item{typ: itemGo}
 	tokens["{{go"] = item{typ: itemGo}
+	tokens["{{e"] = item{typ: itemGo, withError: true}
+	tokens["{{err"] = item{typ: itemGo, withError: true}
 
 	tokens["{{begin}}"] = item{typ: itemStrictBlock}
 	tokens["{{end}}"] = item{typ: itemEndBlock}

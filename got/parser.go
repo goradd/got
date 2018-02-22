@@ -20,11 +20,12 @@ func Parse(l *lexer) string  {
 // Process the template items coming from the lexer and return the whole thing as a string
 func parseItem(l *lexer, parent item) string {
 	var ret string
+	var item item
 
 	for {
-		item := l.nextItem()
+		item = l.nextItem()
 
-		if item.typ == itemEOF || item.typ == itemEnd {
+		if item.typ == itemEOF || item.typ == itemEnd || item.typ == itemIgnore {
 			return ret
 		}
 
@@ -52,7 +53,7 @@ func outputRun(parent item, item item) string {
 
 	switch parent.typ {
 	case itemGo:
-		return item.val	// straight go code
+		return outputGo(item.val, parent.withError)	// straight go code
 
 	case itemText:
 		/*
@@ -71,6 +72,16 @@ func outputRun(parent item, item item) string {
 
 	}
 	return out
+}
+
+func outputGo(code string, withErr bool) string {
+	if withErr {
+		return fmt.Sprintf(
+			"\n{\n err := %s\n" +
+				"if err != nil { return err}\n}\n", code)
+	} else {
+		return code
+	}
 }
 
 func outputValue(item item, val string) string {

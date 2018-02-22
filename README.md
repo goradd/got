@@ -67,9 +67,11 @@ options:
 	- o: The output directory. If not specified, files will be output at the same location as the corresponding template.
 	- t fileType: If set, will process all files in the current directory with this suffix. If not set, you must specify the files at the end of the command line.
 	- i: Run `goimports` on the output files, rather than `go fmt`
-	- I directories:  A list of semicolon separated directories to use as the search path for include files. 
-	    Directories are searched in the order specified and first matching file will be used. If not specified,
-	    it will look in the current directory.
+	- I directories and/or files:  A list of semicolon separated directories and/or files. If a directory, it is used as 
+		the search path for include files. If a file, it is automatically added to the front of every file that is
+		processed.  Directories are searched in the order specified and first matching file will be used. It
+		 will always look in the current directory last unless the current directory is specified
+		 in the list in another location.
 
 example:
 	got -t got -i -o /templates
@@ -238,6 +240,7 @@ processed so far will still be sent to the output buffer.
 - `{{be` or `{{bool,err` Boolean value (will output "true" or "false")
 - `{{we`, `{{bytes,err`, `{{!we` or `{{!bytes,err` Byte slice
 - `{{ve`, `{{stringer,err`, `{{!ve` or `{{!stringer,err` Write any value that implements the Stringer interface
+- `{{e`, or `{{err` Execute go code that returns an error, and stop if the error is not nil
 
 ##### Example
 ```go
@@ -317,10 +320,9 @@ join the line with the next line.
 - `{{if `*code*`}}` This is a convenience tag for surrounding text with a go "if" statement. To close the 
   if, use `{{if}}`. You can put a `{{else}}` in between to have an if/else. These kinds of if/else statements
   are easier to read than putting them inside of `{{g` tags.
-  
-Example: ```{{if plural }}We are{{else}}I am{{if}} awesome.```
+  Example: ```{{if plural }}We are{{else}}I am{{if}} awesome.```
+- `{{for `*code*`}}` Similar to the if tag, this starts a "for" block. End it with ```{{for}}```
 
-  
 
 ## Bigger Example
 

@@ -17,6 +17,7 @@ const eof = -1
 type Pos int
 
 var IncludePaths []string
+var IncludeFiles []string
 
 var namedBlocks map[string]string
 
@@ -143,6 +144,7 @@ func (l *lexer)lexTag(priorState stateFn) stateFn {
 			i = tokens["{{>"]
 		} else {
 			// we are going to treat it as a go value
+			// TODO: Figure out how to discern between a potential go value and an attempt to use an unknown tag
 			l.pos = pos
 			l.next()
 			l.next()

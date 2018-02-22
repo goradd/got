@@ -13,14 +13,25 @@ import (
 
 
 func processFile(file string) string {
-	buf, err := ioutil.ReadFile(file)
+	var s string
 
-	s := fmt.Sprintf("%s", buf)
+	for _,f := range got.IncludeFiles {
+		buf, err := ioutil.ReadFile(f)
+		if err != nil {
+			fmt.Println(err)
+			return ""
+		}
+		s += string(buf[:])
+	}
+
+	buf, err := ioutil.ReadFile(file)
 
 	if err != nil {
 		fmt.Println(err)
 		return ""
 	}
+	s += string(buf[:])
+
 	/*
 	defer func() {
 		if r := recover(); r != nil {
@@ -112,18 +123,27 @@ func main() {
 		fmt.Println("-o: send processed files to the given directory. Otherwise sends to the same directory that the template is in.")
 		fmt.Println("-t: process all files with this suffix in the current directory. Otherwise, specify specific files at the end.")
 		fmt.Println("-i: run goimports on the result files to automatically fix up the import statement and format the file. You will need goimports installed.")
-		fmt.Println("-I: the list of directories to search for include files. They are searched in the order given, and first one found will be used.")
+		fmt.Println("-I: the list of directories to search for include files, or files to prepend before every processed file. Files are searched in the order given, and first one found will be used.")
 	}
 
 
-	got.IncludePaths = []string{"."}
+	got.IncludePaths = []string{}
+	got.IncludeFiles = []string{}
 	if includes != "" {
 		i := strings.Split(includes, ";")
 		for _, i2 := range i {
-			f, _ := filepath.Abs(i2)
-			got.IncludePaths = append(got.IncludePaths, f)
+			path, _ := filepath.Abs(i2)
+			if fi, err := os.Stat(path); err != nil {
+				fmt.Println ("Include path " + path + " does not exist.")
+			} else if fi.IsDir() {
+				got.IncludePaths = append(got.IncludePaths, path)
+			} else {
+				got.IncludeFiles = append(got.IncludeFiles, path)
+			}
 		}
 	}
+
+	got.IncludePaths = append(got.IncludePaths, ".")
 
 	if outDir != "" {
 		dir,err := filepath.Abs(outDir)
