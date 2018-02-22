@@ -270,7 +270,8 @@ Example: `{{: "myTemplate.inc" }}`
 ### Defined Fragments
 Defined fragments start a block of text that can be included later in a template. The included text will
 be sent as is, and then processed in whatever mode the template processor is in, as if that text was simply
-inserted into the template at that spot. The fragment can be defined
+inserted into the template at that spot. You can include the {{ or {{g tags inside of the fragment to
+force the processor into the text or go modes if needed. The fragment can be defined
 any time before it is included, including being defined in other include files. You can add optional parameters
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
@@ -290,9 +291,12 @@ This is my html body.
 {{end}}
 
 {{< writeMe }}
+{{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
+{{g 
 if $2 {
 	buf.WriteString("$1")
 }
+}}
 {{end}}
 
 
@@ -309,7 +313,7 @@ func OutTemplate(buf bytes.Buffer) {
 }
 ```
 
-### Miscelaneous Tags
+### Other Tags
 
 - `{{g` or `{{go` switch into go mode from within a static text mode.
 - `{{#` or `{{//` Comment the template. This is removed from the compiled template.
