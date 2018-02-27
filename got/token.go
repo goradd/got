@@ -11,6 +11,7 @@ type item struct {
 	escaped bool
 	withError bool
 	translate bool
+	htmlBreaks bool		// adds html break tags in exchange for newlines
 	val string			// filled in by lexer after initialization
 }
 
@@ -59,11 +60,14 @@ func init() {
 	tokens = make(map[string]item)
 
 	tokens["{{!s"] = item{typ: itemString, escaped: true, withError: false}
+	tokens["{{!="] = item{typ: itemString, escaped: true, withError: false}
+	tokens["{{!h"] = item{typ: itemString, escaped: true, withError: false, htmlBreaks:true}
 	tokens["{{!string"] = item{typ: itemString, escaped: true, withError: false}
 	tokens["{{="] = item{typ: itemString, escaped: false, withError: false}
 	tokens["{{s"] = item{typ: itemString, escaped: false, withError: false}
 	tokens["{{string"] = item{typ: itemString, escaped: false, withError: false}
 	tokens["{{!se"] = item{typ: itemString, escaped: true, withError: true}
+	tokens["{{!=e"] = item{typ: itemString, escaped: true, withError: true}
 	tokens["{{!string,err"] = item{typ: itemString, escaped: true, withError: true}
 	tokens["{{=e"] = item{typ: itemString, escaped: false, withError: true}
 	tokens["{{se"] = item{typ: itemString, escaped: false, withError: true}

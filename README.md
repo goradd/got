@@ -89,8 +89,12 @@ separating the go code from the brackets.
 Text will get written to output by calling `buf.WriteString`. Got makes no assumptions
 as to how you declare the `buf` variable, it just needs to be available when the template text is declared.
 Usually you would do this by declaring a function at the top of your template that receives a 
-`buf *bytes.Buffer` parameter. After compiling the template output together with you program, you call
+`buf *bytes.Buffer` parameter. After compiling the template output together with your program, you call
 this function to get the template output. 
+
+At a minimum, you will need to import the "bytes" package into the file with your template function.
+Depending on what tags you use, you might need to add 
+additional items to your import list. Those are mentioned below with each tag.
 
 ### Example
 Here is how you might create a very basic template. For purposes of this example, we will call the file
@@ -145,9 +149,10 @@ The following tags will send the surrounded text to `buf.WriteString`:
 - `{{` With a space or newline after it will begin to output text as written.
 - `{{!` or `{{esc` html escapes the text. Html reserved characters, like < or > are turned into html entities first. 
 This happens when the template is compiled, so that when the template runs, the string will already be escaped. 
+Requires the "html" package.
 - `{{h` or `{{html` Converts the text to html by escaping reserved characters, surrounding double returns
 with ```<p>``` paragraph tags, and ending single returns with ```<br>``` break tags, so that the text will
-appear as written when sent to a browser.
+appear as written when sent to a browser. Requires the "html" and "strings" packages.
 - `{{t` or `{{translate` Strings will be sent to a translator by wrapping the string in a call to
 `t.Translate()`. Its up to you to define this object and make it available to the template. The
 translation will happen during runtime of your program. We hope that a future implementation could
@@ -221,10 +226,12 @@ that returns a value.
 Some value types potentially could produce html reserved characters. These tags will html escape
 the output.
 
-- `{{!s` or `{{!string` Escape a go string and send to output. 
-  - Example: `{{!s getUserInput() }}`
+- `{{!=`,`{{!s` or `{{!string` Escape a go string and send to output. Requires the "html" package.
+  - Example: `{{!= getUserInput() }}`
 - `{{!w` or `{{!bytes` Byte slice
 - `{{!v` or `{{!stringer` Any value that implements the Stringer interface. 
+- `{{!h` Escape a go string and convert newlines to html break tags to essentially show the html as code in the browser.
+Requires the "html" and "strings" packages.
 
 #### Capturing Errors
 
@@ -233,7 +240,7 @@ type. If the error is not nil, processing will stop and the error will be return
 tags expect to be included in a function that returns an error. Any template text
 processed so far will still be sent to the output buffer.
 
-- `{{=e`, `{{se`, `{{string,err`, `{{!e`, `{{!string,err` Send a go string to output. The last 2 will html escape too.
+- `{{=e`, `{{se`, `{{string,err`, `{{!=e`, `{{!se`, `{{!string,err` Send a go string to output. The last 3 will html escape too.
 - `{{ie` or `{{int,err` Integer
 - `{{ue` or `{{uint,err` Unsigned Integer
 - `{{fe` or `{{float,err` Floating point number

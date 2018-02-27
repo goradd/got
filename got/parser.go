@@ -87,9 +87,12 @@ func outputGo(code string, withErr bool) string {
 func outputValue(item item, val string) string {
 	writer := "buf.WriteString(%s)"
 
-	if item.escaped {
+	if item.htmlBreaks { // assume escaped too
+		writer = `buf.WriteString(strings.Replace(html.EscapeString(%s), "\n", "<br>\n", -1))`
+	} else if item.escaped {
 		writer = "buf.WriteString(html.EscapeString(%s))"
 	}
+
 
 	var formatter string
 
