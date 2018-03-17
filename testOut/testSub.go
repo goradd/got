@@ -36,3 +36,19 @@ func myTest3(buf *bytes.Buffer) {
 	buf.WriteString("Me")
 
 }
+
+func myTest4(buf *bytes.Buffer) {
+
+	buf.WriteString(`Substituted:
+`)
+
+	buf.WriteString(`
+`)
+	buf.WriteString("You")
+
+	buf.WriteString(``)
+
+	buf.WriteString(`
+`)
+
+}

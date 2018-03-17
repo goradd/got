@@ -57,6 +57,7 @@ func outputRun(parent item, item item) string {
 
 	case itemText:
 		/*
+		-- Actually, below is not true. This might happen with named fragments.
 		if parent.typ == itemText {
 			// itemText within itemText does not make sense, so we treat it like an interface instead. Similar to compressed interface format.
 			parent.typ = itemInterface
