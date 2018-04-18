@@ -332,7 +332,9 @@ join the line with the next line.
   if, use `{{if}}`. You can put a `{{else}}` in between to have an if/else. These kinds of if/else statements
   are easier to read than putting them inside of `{{g` tags.
   Example: ```{{if plural }}We are{{else}}I am{{if}} awesome.```
-- `{{for `*code*`}}` Similar to the if tag, this starts a "for" block. End it with ```{{for}}```
+- `{{for `*code*`}}` Similar to the if tag, this starts a "for" block. End it with ```{{for}}```. Treat it the same
+  as any go `for`, meaning it can do standard iteration or be used in a range.
+  Example: ```{{for num,item := range items }}<p>Item {{num}} is {{item}}</p>{{for}}```
 
 
 ## Bigger Example
