@@ -530,7 +530,7 @@ func (l *lexer) lexIf(nextState stateFn) stateFn {
 	l.ignoreWhiteSpace()
 	l.openCount++
 	if l.isAtCloseTag() { // this is a closing tag
-		return l.lexGoExtra(nextState, " } ", "")
+		return l.lexGoExtra(nextState, " }\n", "")
 	} else {
 		return l.lexGoExtra(nextState, " if ", " { ")
 	}
@@ -545,7 +545,7 @@ func (l *lexer) lexElse(nextState stateFn) stateFn {
 		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
 	}
 
-	return l.lexGoExtra(nextState, " } else { ", "")
+	return l.lexGoExtra(nextState, " } else {\n", "")
 }
 
 func (l *lexer) lexFor(nextState stateFn) stateFn {
@@ -553,7 +553,7 @@ func (l *lexer) lexFor(nextState stateFn) stateFn {
 	l.ignoreWhiteSpace()
 	l.openCount++
 	if l.isAtCloseTag() { // this is a closing tag
-		return l.lexGoExtra(nextState, " } ", "")
+		return l.lexGoExtra(nextState, " }\n", "")
 	} else {
 		return l.lexGoExtra(nextState, " for ", " { ")
 	}
