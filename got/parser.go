@@ -127,6 +127,9 @@ func outputValue(item item, val string) string {
 }
 
 func outputText(item item, val string) string {
+	if val == "" {
+		return ""
+	}
 	if item.escaped {
 		val = html.EscapeString(val)
 	}
