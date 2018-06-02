@@ -3,7 +3,7 @@
 GoT (short for go templates) is a template engine that generates fast go templates. It is similar to some other 
 template engines, like hero, in that it generates go code that can get compiled into your program,
 or a go plugin. This approach creates extremely fast templates, especially as
-compared to go's standard template engine. It also gives you much more freedom than Go's temmplate
+compared to go's standard template engine. It also gives you much more freedom than Go's template
 engine, since at any time you can just switch to go code to do what you want.
 
 GoT's primary function is to support the goradd web framework, and that drives our
@@ -22,22 +22,22 @@ design decisions. However, it is a standalone template engine that you may find 
 write strings in go. Since the resulting template is go code, your template will be compiled to fast
 machine code.
 - **Easy to use**. The templates themselves are embedded into your go code. The template language is pretty 
-simple; there are not many tags to learn. You can switch into and out of go code at will. Tags are 
+simple and you can do a lot with only a few tags. You can switch into and out of go code at will. Tags are 
 Mustache-like, so somewhat go idiomatic.
 - **Flexible**. The template language makes very few assumptions about the go environment it is in. Most
 template engines require you to call the template with a specific function signature. **GoT** gives you the
 freedom to call your templates how you want.
-- **Tranlsation Support**. You can specify that you want to send your strings to a translator before 
+- **Translation Support**. You can specify that you want to send your strings to a translator before 
 output.
 - **Error Support**. You can call into go code that returns errors, and have the template stop at that
 point and return an error to your wrapper function. The template will output its text up to that point,
 allowing you to easily see where in the template the error occurred.
-- **Include Files**. Templates can include other templates. Specify
+- **Include Files**. Templates can include other templates. You can specify
 a list of search directories for the include files, allowing you to put include files in a variety of
 locations, and have include files in one directory that override another directory.
 - **Custom Tags**. You can define named fragments that you can include at will, 
 and you can define these fragments in include files. To use these fragments, you just
-use the name as the tag. This essentially gives you the ability to create your own template
+use the name of the fragment as the tag. This essentially gives you the ability to create your own template
 language. When you use a custom tag, you can also include parameters that will 
 replace placeholders in your fragment, giving you even more power to your custom tags. 
 
@@ -135,27 +135,29 @@ func main() {
 	template.OutTemplate(b)
 	b.WriteTo(os.Stdout)
 }
-
 ```
+
+This simple example shows a mix of go code and template syntax in the same file. Using GoT's include files,
+you can separate your go code from template code if you want.
 
 ## Template Syntax
 
-The following decribes how open tags work. Most tags end with a ` }}` tag, unless otherwise indicated.
+The following describes how open tags work. Most tags end with a ` }}`, unless otherwise indicated.
 Many tags have a short and a long form. Using the long form does not impact performance, its just there
-to help your templates have some human readable context to them.
+to help your templates have some human readable context to them if you want that.
 
 ### Static Text
 The following tags will send the surrounded text to `buf.WriteString`:
 - `{{` With a space or newline after it will begin to output text as written.
 - `{{!` or `{{esc` html escapes the text. Html reserved characters, like < or > are turned into html entities first. 
 This happens when the template is compiled, so that when the template runs, the string will already be escaped. 
-Requires the "html" package.
+This requires you to import the "html" package (or run go imports on the file).
 - `{{h` or `{{html` Converts the text to html by escaping reserved characters, surrounding double returns
 with ```<p>``` paragraph tags, and ending single returns with ```<br>``` break tags, so that the text will
 appear as written when sent to a browser. Requires the "html" and "strings" packages.
 - `{{t` or `{{translate` Strings will be sent to a translator by wrapping the string in a call to
 `t.Translate()`. Its up to you to define this object and make it available to the template. The
-translation will happen during runtime of your program. We hope that a future implementation could
+translation will happen during runtime of your program. We hope that a future implementation of GoT could
 have an option to send these strings to an i18n file to make it easy to send these to a translation service.
 
 From within any static text context described above you can switch into go context by using the
@@ -213,11 +215,11 @@ that returns a value.
 - `{{f` or `{{float` Floating point number
 - `{{b` or `{{bool` Boolean value (will output "true" or "false")
 - `{{w` or `{{bytes` Byte slice
-- `{{v` or `{{stringer` or `{{`*go code*`}}` Send any value that implements the Stringer interface.
+- `{{v` or `{{stringer` or `{{`*goIdentifier*`}}` Send any value that implements the Stringer interface.
 	This can be slower than
    the other tags since it uses fmt.Sprintf internally, so if this is a heavily used template, 
    avoid it. Usually you will not notice a speed difference though. and the third option
-   can be very convenient.
+   can be very convenient. Note that this third option is simply any go variable surrounded by mustaches with no spaces.
 
 
 
@@ -264,7 +266,7 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 ```
 
 ### Include Files
-`{{: "fileName" }}` or `{{include` Inserts the given file name into the template. 
+`{{: "fileName" }}` or `{{include "fileName" }}` Inserts the given file name into the template. 
  The included file will start in whatever mode the receiving template is in, as if the text was inserted
  at that spot, so if the include tags are
  put inside of go code, the included file will start in go mode. The file will then be processed like any other got file.
@@ -427,4 +429,4 @@ Build your application and go to `http://localhost:8000` in your browser, to see
 
 ## License
 
-Got is licensed under the Apache License.
+Got is licensed under the MIT License.
