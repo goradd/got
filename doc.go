@@ -180,12 +180,12 @@
 //   package test
 //
 //   import (
-//   	"bytes"
-//   	"fmt"
+//      "bytes"
+//      "fmt"
 //   )
 //
 //   type Translater interface {
-//   	Translate(string, *bytes.Buffer)
+//      Translate(string, *bytes.Buffer)
 //   }
 //
 //   func staticTest(buf *bytes.Buffer) {
@@ -198,9 +198,9 @@
 //   }}
 //
 //   {{h
-//   	This is text
-//   	that is both escaped and has
-//   	html paragraphs and breaks inserted.
+//      This is text
+//      that is both escaped and has
+//      html paragraphs and breaks inserted.
 //   }}
 //
 //   }
@@ -331,7 +331,7 @@
 //   {{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
 //   {{g 
 //   if $2 {
-//   	buf.WriteString("$1")
+//     buf.WriteString("$1")
 //   }
 //   }}
 //   {{end}}
@@ -339,11 +339,11 @@
 //
 //   func OutTemplate(buf bytes.Buffer) {
 //   {{
-//   	<html>
-//   		<body>
-//   			{{> hFrag }}
-//   		</body>
-//   	</html>
+//      <html>
+//        <body>
+//          {{> hFrag }}
+//        </body>
+//      </html>
 //   }}
 //
 //   {{writeMe "Help Me!", true}}
@@ -395,8 +395,8 @@
 //   package main
 //
 //   import {
-//   	"context"
-//   	"bytes"
+//      "context"
+//      "bytes"
 //   }
 //
 //
@@ -422,24 +422,24 @@
 //   type myHandler struct {}
 //
 //   func (h myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)  {
-//   	ctx :=  context.WithValue(r.Context(), "caller", r.Referer())
-//   	b := new(bytes.Buffer)
-//   	writeTemplate(ctx, b)	// call the got template
-//   	w.Write(b.Bytes())
+//      ctx :=  context.WithValue(r.Context(), "caller", r.Referer())
+//      b := new(bytes.Buffer)
+//      writeTemplate(ctx, b)	// call the got template
+//      w.Write(b.Bytes())
 //   }
 //
 //
 //   func main() {
-//   	var r myHandler
-//   	var err error
+//      var r myHandler
+//      var err error
 //
-//   	*local = "0.0.0.0:8000"
+//      *local = "0.0.0.0:8000"
 //
-//   	err = http.ListenAndServe(*local, r)
+//      err = http.ListenAndServe(*local, r)
 //
-//   	if err != nil {
-//   		fmt.Println(err)
-//   	}
+//      if err != nil {
+//         fmt.Println(err)
+//      }
 //   }
 //
 // To compile the template:
