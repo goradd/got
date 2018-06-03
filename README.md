@@ -210,7 +210,7 @@ that returns a value.
 
 - `{{=`, `{{s`, or  `{{string` Send a go string to output. 
   - Example: `{{= fmt.Sprintf("I am %s", sVar) }}`
-- `{{i` or `{{int` Integer. Example: `{{ The value is: {{=i iVar }} }}`
+- `{{i` or `{{int` Integer. Example: `{{ The value is: {{i iVar }} }}`
 - `{{u` or `{{uint` Unsigned Integer
 - `{{f` or `{{float` Floating point number
 - `{{b` or `{{bool` Boolean value (will output "true" or "false")
