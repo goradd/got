@@ -3,19 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/spekary/got/got"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"os/exec"
-	"github.com/spekary/got/got"
 )
-
 
 func processFile(file string) string {
 	var s string
 
-	for _,f := range got.IncludeFiles {
+	for _, f := range got.IncludeFiles {
 		buf, err := ioutil.ReadFile(f)
 		if err != nil {
 			fmt.Println(err)
@@ -33,11 +32,11 @@ func processFile(file string) string {
 	s += string(buf[:])
 
 	/*
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered ", r)
-		}
-	}()*/
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Recovered ", r)
+			}
+		}()*/
 
 	s = ProcessString(s, file)
 	if s != "" {
@@ -46,12 +45,12 @@ func processFile(file string) string {
 	return s
 }
 
-func writeFile (s string, file string, outDir string, runImports bool) {
+func writeFile(s string, file string, outDir string, runImports bool) {
 
 	i := strings.LastIndex(file, ".")
 
 	dir := filepath.Dir(file)
-	dir,_ = filepath.Abs(dir)
+	dir, _ = filepath.Abs(dir)
 	file = filepath.Base(file)
 
 	if i < 0 {
@@ -74,7 +73,7 @@ func writeFile (s string, file string, outDir string, runImports bool) {
 	if runImports {
 		execCommand("goimports -w " + file)
 	} else {
-		execCommand("go fmt " + file)	// at least format it if we are not going to run imports on it
+		execCommand("go fmt " + file) // at least format it if we are not going to run imports on it
 	}
 }
 
@@ -86,7 +85,6 @@ func ProcessString(input string, fileName string) string {
 
 	return s
 }
-
 
 // execCommand wraps exec.Command
 func execCommand(command string) {
@@ -105,7 +103,7 @@ func execCommand(command string) {
 }
 
 func main() {
-	var  outDir string
+	var outDir string
 	var typ string
 	var runImports bool
 	var includes string
@@ -126,7 +124,6 @@ func main() {
 		fmt.Println("-I: the list of directories to search for include files, or files to prepend before every processed file. Files are searched in the order given, and first one found will be used.")
 	}
 
-
 	got.IncludePaths = []string{}
 	got.IncludeFiles = []string{}
 	if includes != "" {
@@ -134,7 +131,7 @@ func main() {
 		for _, i2 := range i {
 			path, _ := filepath.Abs(i2)
 			if fi, err := os.Stat(path); err != nil {
-				fmt.Println ("Include path " + path + " does not exist.")
+				fmt.Println("Include path " + path + " does not exist.")
 			} else if fi.IsDir() {
 				got.IncludePaths = append(got.IncludePaths, path)
 			} else {
@@ -146,7 +143,7 @@ func main() {
 	got.IncludePaths = append(got.IncludePaths, ".")
 
 	if outDir != "" {
-		dir,err := filepath.Abs(outDir)
+		dir, err := filepath.Abs(outDir)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -154,13 +151,11 @@ func main() {
 		outDir = dir
 	}
 
-
 	//var err error
 
 	if typ != "" {
 		files, _ = filepath.Glob("*." + typ)
 	}
-
 
 	for _, file := range files {
 		s := processFile(file)

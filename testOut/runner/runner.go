@@ -2,13 +2,12 @@ package main
 
 import (
 	".."
-	"path/filepath"
-	"io/ioutil"
 	"bytes"
-	"strings"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
-
 
 func main() {
 	buf := bytes.Buffer{}
@@ -25,15 +24,14 @@ func main() {
 	testOut.TestVars(&buf)
 	writeFile(buf.Bytes(), "testVars", "..")
 
-
 }
 
-func writeFile (b []byte, file string, outDir string) {
+func writeFile(b []byte, file string, outDir string) {
 
 	i := strings.LastIndex(file, ".")
 
 	dir := filepath.Dir(file)
-	dir,_ = filepath.Abs(dir)
+	dir, _ = filepath.Abs(dir)
 	file = filepath.Base(file)
 
 	if i < 0 {

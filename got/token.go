@@ -7,17 +7,17 @@ package got
 type itemType int
 
 type item struct {
-	typ itemType
-	escaped bool
-	withError bool
-	translate bool
-	htmlBreaks bool		// adds html break tags in exchange for newlines
-	val string			// filled in by lexer after initialization
+	typ        itemType
+	escaped    bool
+	withError  bool
+	translate  bool
+	htmlBreaks bool   // adds html break tags in exchange for newlines
+	val        string // filled in by lexer after initialization
 }
 
 const (
 	tokEndBlock = "{{end}}"
-	tokEnd = "}}" // must check for a white space before it
+	tokEnd      = "}}" // must check for a white space before it
 )
 
 const (
@@ -25,16 +25,16 @@ const (
 	itemError
 	itemStrictBlock
 	itemNamedBlock
-	itemEndBlock	// ends blocks
+	itemEndBlock   // ends blocks
 	itemSubstitute // substitutes a named block
-	itemInclude // immediately includes another file during lexing
+	itemInclude    // immediately includes another file during lexing
 
-	itemEnd		// ends any tag below
+	itemEnd // ends any tag below
 	itemConvert
 	itemGo
 	itemText
 
-	itemRun		// The run of text that belongs to the previous tag
+	itemRun // The run of text that belongs to the previous tag
 
 	itemString
 	itemBool
@@ -51,7 +51,6 @@ const (
 	itemIf
 	itemElse
 	itemFor
-
 )
 
 var tokens map[string]item
@@ -61,7 +60,7 @@ func init() {
 
 	tokens["{{!s"] = item{typ: itemString, escaped: true, withError: false}
 	tokens["{{!="] = item{typ: itemString, escaped: true, withError: false}
-	tokens["{{!h"] = item{typ: itemString, escaped: true, withError: false, htmlBreaks:true}
+	tokens["{{!h"] = item{typ: itemString, escaped: true, withError: false, htmlBreaks: true}
 	tokens["{{!string"] = item{typ: itemString, escaped: true, withError: false}
 	tokens["{{="] = item{typ: itemString, escaped: false, withError: false}
 	tokens["{{s"] = item{typ: itemString, escaped: false, withError: false}
@@ -131,27 +130,26 @@ func init() {
 	tokens["{{begin}}"] = item{typ: itemStrictBlock}
 	tokens["{{end}}"] = item{typ: itemEndBlock}
 	tokens["{{define"] = item{typ: itemNamedBlock} // must follow with a name and a close tag
-	tokens["{{<"] = item{typ: itemNamedBlock} // must follow with a name and a close tag
+	tokens["{{<"] = item{typ: itemNamedBlock}      // must follow with a name and a close tag
 
-	tokens["{{>"] = item{typ: itemSubstitute} // must follow with a name and a close tag
+	tokens["{{>"] = item{typ: itemSubstitute}   // must follow with a name and a close tag
 	tokens["{{put"] = item{typ: itemSubstitute} // must follow with a name and a close tag
 
-	tokens["{{!t"] = item{typ: itemText, escaped: true, translate:true}
-	tokens["{{!translate"] = item{typ: itemText, escaped: true, translate:true}
-	tokens["{{t"] = item{typ: itemText, escaped: false, translate:true}
-	tokens["{{translate"] = item{typ: itemText, escaped: false, translate:true}
+	tokens["{{!t"] = item{typ: itemText, escaped: true, translate: true}
+	tokens["{{!translate"] = item{typ: itemText, escaped: true, translate: true}
+	tokens["{{t"] = item{typ: itemText, escaped: false, translate: true}
+	tokens["{{translate"] = item{typ: itemText, escaped: false, translate: true}
 
-	tokens["{{:"] = item{typ: itemInclude} // must follow with a quoted file name
+	tokens["{{:"] = item{typ: itemInclude}       // must follow with a quoted file name
 	tokens["{{include"] = item{typ: itemInclude} // must follow with a quoted file name
 
-	tokens["{{-"] = item{typ: itemBackup} 		// Can be followed by a number to indicate how many chars to backup
-	tokens["{{backup"] = item{typ: itemBackup}  // Can be followed by a number to indicate how many chars to backup
+	tokens["{{-"] = item{typ: itemBackup}      // Can be followed by a number to indicate how many chars to backup
+	tokens["{{backup"] = item{typ: itemBackup} // Can be followed by a number to indicate how many chars to backup
 
-	tokens["{{if"] = item{typ: itemIf} 		// Converted to a go statement
+	tokens["{{if"] = item{typ: itemIf} // Converted to a go statement
 	tokens["{{else"] = item{typ: itemElse}
 
-	tokens["{{for"] = item{typ: itemFor} 		// Converted to a go statement
+	tokens["{{for"] = item{typ: itemFor} // Converted to a go statement
 
 	tokens["}}"] = item{typ: itemEnd} // need to check this for white space BEFORE instead of after.
 }
-

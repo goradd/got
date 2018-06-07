@@ -2,14 +2,14 @@ package got
 
 import (
 	"fmt"
-	"strings"
-	"unicode/utf8"
-	"strconv"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
-	"log"
+	"strconv"
+	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const eof = -1
@@ -22,7 +22,7 @@ var IncludeFiles []string
 var namedBlocks map[string]string
 
 func init() {
-	namedBlocks = make (map[string]string)
+	namedBlocks = make(map[string]string)
 }
 
 func (i item) String() string {
@@ -45,16 +45,16 @@ func (i item) String() string {
 }
 
 type lexer struct {
-	fileName string	  // file name being scanned
-	blockName string	// named block being scanned
-	input   string    // string being scanned
-	start   int       // start position of item
-	pos     int       // current position
-	lastPos int       // last position of item read
-	width   int       // width of last rune
-	items   chan item // channel of scanned items
-	hasError bool
-	openCount int		// Make sure open and close tags are matched
+	fileName  string    // file name being scanned
+	blockName string    // named block being scanned
+	input     string    // string being scanned
+	start     int       // start position of item
+	pos       int       // current position
+	lastPos   int       // last position of item read
+	width     int       // width of last rune
+	items     chan item // channel of scanned items
+	hasError  bool
+	openCount int // Make sure open and close tags are matched
 }
 
 type stateFn func(*lexer) stateFn
@@ -75,24 +75,24 @@ func (l *lexer) nextItem() item {
 	case i := <-l.items:
 		l.lastPos = l.pos
 		return i
-	case <-time.After(10 * time.Second):	// Internal error? We are supposed to detect EOF situations before we get here
+	case <-time.After(10 * time.Second): // Internal error? We are supposed to detect EOF situations before we get here
 		//close(l.items)
-		return 	item{typ: itemError, val: "*** Internal error at line " + strconv.Itoa(l.getLine()) + " read past end of file " + l.fileName + ". Are you missing an end tag?"}
+		return item{typ: itemError, val: "*** Internal error at line " + strconv.Itoa(l.getLine()) + " read past end of file " + l.fileName + ". Are you missing an end tag?"}
 	}
 }
 
 func Lex(input string, fileName string) *lexer {
 	l := &lexer{
-		input: input,
+		input:    input,
 		fileName: fileName,
-		items: make(chan item),
+		items:    make(chan item),
 	}
 	go l.run()
 	return l
 }
 
 func (l *lexer) emitType(t itemType) {
-	item := item{typ:t, val:l.input[l.start:l.pos]}
+	item := item{typ: t, val: l.input[l.start:l.pos]}
 	l.items <- item
 	l.start = l.pos
 	//fmt.Printf("%v", item)
@@ -108,13 +108,12 @@ func (l *lexer) emit(i item) {
 }
 
 func (l *lexer) emitRun(prefix string, suffix string) {
-	var i = item{typ:itemRun, val:prefix + l.input[l.start:l.pos] + suffix}
+	var i = item{typ: itemRun, val: prefix + l.input[l.start:l.pos] + suffix}
 	l.items <- i
 	l.start = l.pos
 	//fmt.Printf("%v", item)
 
 }
-
 
 // Starting state. We start in GO mode.
 func lexStart(l *lexer) stateFn {
@@ -122,9 +121,8 @@ func lexStart(l *lexer) stateFn {
 	return l.lexGo(nil)
 }
 
-
 // We are pointing to the start of an unknown tag
-func (l *lexer)lexTag(priorState stateFn) stateFn {
+func (l *lexer) lexTag(priorState stateFn) stateFn {
 	pos := l.pos
 	a := l.acceptTag()
 
@@ -208,13 +206,13 @@ func (l *lexer)lexTag(priorState stateFn) stateFn {
 }
 
 func (l *lexer) lexStrictBlock(nextState stateFn) stateFn {
-	offset := strings.Index(l.input[l.start:],tokEndBlock)
+	offset := strings.Index(l.input[l.start:], tokEndBlock)
 	if offset == -1 {
 		return l.errorf("No strict end block found")
 	}
 	l.pos += offset
 	l.emitType(itemRun)
-	l.start += len(tokEndBlock)	// skip end block
+	l.start += len(tokEndBlock) // skip end block
 	l.width = len(tokEndBlock)
 	l.emitType(itemEnd)
 	return nextState
@@ -225,12 +223,12 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	l.acceptRun()
 	fileName := l.currentString()
 	if !l.isAtCloseTag() {
-		return l.errorf ("Expected close tag")
+		return l.errorf("Expected close tag")
 	}
 	l.ignoreCloseTag()
 
 	fileName = strings.TrimSpace(fileName)
-	fileName = strings.Trim(fileName,"\"")
+	fileName = strings.Trim(fileName, "\"")
 
 	// Add relative processing from the current path
 	dir := filepath.Dir(l.fileName)
@@ -244,8 +242,8 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	var buf []byte
 	var err error
 	if len(IncludePaths) > 0 {
-		for _,path := range IncludePaths {
-			if 	buf, err = ioutil.ReadFile(path + "/" + fileName); err == nil {
+		for _, path := range IncludePaths {
+			if buf, err = ioutil.ReadFile(path + "/" + fileName); err == nil {
 				break
 			}
 			if !os.IsNotExist(err) {
@@ -264,15 +262,15 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 		return l.errorf(s)
 	}
 	if err != nil {
-		return l.errorf ("File read error: %s", err.Error())
+		return l.errorf("File read error: %s", err.Error())
 	}
 
 	s := string(buf[:])
 
 	l2 := &lexer{
-		input: s,
-		fileName:fileName,
-		items: l.items,
+		input:    s,
+		fileName: fileName,
+		items:    l.items,
 	}
 	for state := lexStart; state != nil; {
 		state = state(l2)
@@ -284,8 +282,6 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	return nextState
 }
 
-
-
 // lexValue is going to retrieve go code that returns a value
 func (l *lexer) lexValue(nextState stateFn) stateFn {
 	l.ignoreWhiteSpace()
@@ -295,7 +291,7 @@ func (l *lexer) lexValue(nextState stateFn) stateFn {
 		return l.errorf("Looking for close tag, found end of file.")
 	}
 	if !l.isAtCloseTag() {
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
 	}
 	l.emitType(itemRun)
 	l.ignoreCloseTag()
@@ -309,7 +305,7 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 	l.acceptRun()
 
 	if !l.isAtCloseTag() {
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
 	}
 	name := l.currentString()
 	l.ignoreCloseTag()
@@ -318,16 +314,16 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 		return l.errorf("Block name cannot contain spaces")
 	}
 
-	if _,ok := tokens["{{" + name]; ok {
+	if _, ok := tokens["{{"+name]; ok {
 		return l.errorf("Block name cannot be a tag name. Block name: %s")
 	}
 
-	offset := strings.Index(l.input[l.start:],tokEndBlock)
+	offset := strings.Index(l.input[l.start:], tokEndBlock)
 	if offset == -1 {
 		return l.errorf("No end block found")
 	}
 
-	namedBlocks[name] = l.input[l.start:l.start + offset]
+	namedBlocks[name] = l.input[l.start : l.start+offset]
 	l.start = l.start + offset + len(tokEndBlock)
 	l.pos = l.start
 
@@ -339,7 +335,7 @@ func (l *lexer) lexBackup(nextState stateFn) stateFn {
 	l.acceptRun()
 
 	if !l.isAtCloseTag() {
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
 	}
 
 	if l.currentString() != "" {
@@ -356,7 +352,6 @@ func (l *lexer) lexBackup(nextState stateFn) stateFn {
 	return nextState
 }
 
-
 func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 	l.ignoreSpace()
 	l.acceptTag()
@@ -366,7 +361,7 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 	paramString := strings.TrimSpace(l.currentString())
 
 	if !l.isAtCloseTag() {
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
 	}
 
 	l.ignoreCloseTag()
@@ -387,9 +382,9 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 	}
 
 	l2 := &lexer{
-		input: block,
-		blockName:name,
-		items: l.items,
+		input:     block,
+		blockName: name,
+		items:     l.items,
 	}
 	for state := nextState; state != nil; {
 		state = state(l2)
@@ -403,23 +398,22 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 
 func processParams(in, paramString string) (out string, err error) {
 	paramString = strings.TrimSpace(paramString)
-	params,err := splitParams(paramString)
+	params, err := splitParams(paramString)
 
 	if err != nil {
 		return
 	}
 
-
 	var i int
 	var s string
-	for i,s = range params {
-		search := fmt.Sprintf("$%d", i + 1)
+	for i, s = range params {
+		search := fmt.Sprintf("$%d", i+1)
 		in = strings.Replace(in, search, s, -1)
 	}
 
 	// Default missing parameters to blanks
 	for j := i + 1; j < 9; j++ {
-		search := fmt.Sprintf("$%d", j + 1)
+		search := fmt.Sprintf("$%d", j+1)
 		if strings.Index(in, search) != -1 {
 			in = strings.Replace(in, search, "", -1)
 		}
@@ -435,7 +429,7 @@ func splitParams(paramString string) (params []string, err error) {
 	items := strings.Split(paramString, ",")
 
 	// Check to see if we split something surrounded by quotes
-	for _,item := range items {
+	for _, item := range items {
 		cleanItem = strings.TrimSpace(item)
 		if len(cleanItem) == 0 {
 			if currentItem != "" {
@@ -444,10 +438,10 @@ func splitParams(paramString string) (params []string, err error) {
 				params = append(params, cleanItem)
 			}
 		} else if cleanItem[0:1] == "\"" {
-			if cleanItem[len(cleanItem) - 1: ] ==  "\"" {
-				if len(cleanItem) > 1 && item[len(cleanItem) - 2 : len(cleanItem) - 1] !=  "\\" {
+			if cleanItem[len(cleanItem)-1:] == "\"" {
+				if len(cleanItem) > 1 && item[len(cleanItem)-2:len(cleanItem)-1] != "\\" {
 					// an item bounded by quotes, so add it without the quotes
-					currentItem = item[1:len(cleanItem)-1]
+					currentItem = item[1 : len(cleanItem)-1]
 					currentItem = cleanEscapedQuotes(currentItem)
 					params = append(params, currentItem)
 					currentItem = ""
@@ -464,16 +458,16 @@ func splitParams(paramString string) (params []string, err error) {
 				} else {
 					// an item started with a quote, but ended with an escaped quote, so build the string using the original non-cleaned item.
 					offset := strings.Index(item, "\"")
-					currentItem = cleanEscapedQuotes(item[offset + 1:])
+					currentItem = cleanEscapedQuotes(item[offset+1:])
 				}
 			} else {
 				// an item started with a quote, but not ended with a quote, so build the item
 				offset := strings.Index(item, "\"")
-				currentItem = cleanEscapedQuotes(item[offset + 1:])
+				currentItem = cleanEscapedQuotes(item[offset+1:])
 			}
 		} else {
-			if cleanItem[len(cleanItem)-1: ] == "\"" {
-				if len(cleanItem) > 1 && cleanItem[len(cleanItem)-2: len(cleanItem)-1] != "\\" {
+			if cleanItem[len(cleanItem)-1:] == "\"" {
+				if len(cleanItem) > 1 && cleanItem[len(cleanItem)-2:len(cleanItem)-1] != "\\" {
 					// an item ending with a quote, but not started with a quote
 					if currentItem != "" {
 						lastOffset := strings.LastIndex(item, "\"")
@@ -517,7 +511,7 @@ func (l *lexer) lexComment(nextState stateFn) stateFn {
 	l.ignoreRun()
 
 	if !l.isAtCloseTag() {
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
 	}
 
 	l.ignoreCloseTag()
@@ -542,7 +536,7 @@ func (l *lexer) lexElse(nextState stateFn) stateFn {
 	l.ignoreWhiteSpace()
 	l.openCount++
 	if !l.isAtCloseTag() { // TODO: else if
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos + 2])
+		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
 	}
 
 	return l.lexGoExtra(nextState, " } else {\n", "")
@@ -558,8 +552,6 @@ func (l *lexer) lexFor(nextState stateFn) stateFn {
 		return l.lexGoExtra(nextState, " for ", " { ")
 	}
 }
-
-
 
 func (l *lexer) lexGo(nextState stateFn) stateFn {
 	return l.lexGoExtra(nextState, "", "")
@@ -632,7 +624,6 @@ func (l *lexer) lexText(nextState stateFn) stateFn {
 		}
 	}
 
-
 	nextText := func(l *lexer) stateFn {
 		return (*lexer).lexText(l, nextState)
 	}
@@ -650,7 +641,6 @@ func isWhiteSpace(r rune) bool {
 	return isSpace(r) || isEndOfLine(r)
 }
 
-
 // isEndOfLine reports whether r is an end-of-line character.
 func isEndOfLine(r rune) bool {
 	return r == '\r' || r == '\n'
@@ -666,7 +656,7 @@ func isTagChar(r rune) bool {
 }
 
 func (l *lexer) isAtOpenTag() bool {
-	if len(l.input) < l.pos + 2 {
+	if len(l.input) < l.pos+2 {
 		return false
 	}
 	return l.input[l.pos:l.pos+2] == "{{"
@@ -675,19 +665,19 @@ func (l *lexer) isAtOpenTag() bool {
 // Test if we are at a close tag. If a close tag is preceeded by a space char, the space char is part of the tag.
 func (l *lexer) isAtCloseTag() bool {
 
-	if len(l.input) < l.pos + 2 {
-		return false	// close to eof
+	if len(l.input) < l.pos+2 {
+		return false // close to eof
 	}
 
 	if l.input[l.pos:l.pos+2] == tokEnd {
-		 return true
+		return true
 	}
 
-	if len(l.input) < l.pos + 3 {
-		return false	// close to eof
+	if len(l.input) < l.pos+3 {
+		return false // close to eof
 	}
 
-	if l.peek() == ' ' && l.input[l.pos + 1:l.pos+3] == tokEnd {
+	if l.peek() == ' ' && l.input[l.pos+1:l.pos+3] == tokEnd {
 		return true
 	}
 
@@ -725,7 +715,7 @@ func (l *lexer) accept(valid string) bool {
 // acceptRun consumes a run of runes until it finds an open or close tag
 func (l *lexer) acceptRun() {
 	var c rune
-	for !l.isAtOpenTag()  &&
+	for !l.isAtOpenTag() &&
 		!l.isAtCloseTag() &&
 		c != eof {
 
@@ -772,7 +762,6 @@ func (l *lexer) getLine() (line int) {
 	return
 }
 
-
 func (l *lexer) next() rune {
 	var c rune
 	if l.pos >= len(l.input) {
@@ -805,7 +794,6 @@ func (l *lexer) ignoreRun() {
 	l.acceptRun()
 	l.ignore()
 }
-
 
 func (l *lexer) ignoreSpace() {
 	for {
@@ -862,8 +850,6 @@ func (l *lexer) ignoreNewline() {
 		return
 	}
 }
-
-
 
 func (l *lexer) ignoreCloseTag() {
 	if l.isAtCloseTag() {

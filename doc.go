@@ -70,7 +70,7 @@
 //   	- o: The output directory. If not specified, files will be output at the same location as the corresponding template.
 //   	- t fileType: If set, will process all files in the current directory with this suffix. If not set, you must specify the files at the end of the command line.
 //   	- i: Run `goimports` on the output files, rather than `go fmt`
-//   	- I directories and/or files:  A list of semicolon separated directories and/or files. If a directory, it is used as 
+//   	- I directories and/or files:  A list of semicolon separated directories and/or files. If a directory, it is used as
 //   		the search path for include files. If a file, it is automatically added to the front of every file that is
 //   		processed.  Directories are searched in the order specified and first matching file will be used. It
 //   		 will always look in the current directory last unless the current directory is specified
@@ -139,7 +139,7 @@
 //   )
 //
 //   func main() {
-//   	var b bytes.Buffer 
+//   	var b bytes.Buffer
 //   	template.OutTemplate(b)
 //   	b.WriteTo(os.Stdout)
 //   }
@@ -329,7 +329,7 @@
 //
 //   {{< writeMe }}
 //   {{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
-//   {{g 
+//   {{g
 //   if $2 {
 //     buf.WriteString("$1")
 //   }
@@ -411,7 +411,7 @@
 //   {{end}}
 //
 //   {{# include the html template. Since the template is html, we need to put ourselves in static text mode first }}
-//   {{ 
+//   {{
 //   {{include "index.html"}}
 //   }}
 //

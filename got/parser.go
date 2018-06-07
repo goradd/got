@@ -1,18 +1,17 @@
 package got
 
 import (
+	"fmt"
 	"html"
 	"strings"
-	"fmt"
 )
 
-
 type ast struct {
-	item item
+	item  item
 	items []ast
 }
 
-func Parse(l *lexer) string  {
+func Parse(l *lexer) string {
 	item := item{typ: itemGo}
 	return parseItem(l, item)
 }
@@ -47,22 +46,21 @@ func parseItem(l *lexer, parent item) string {
 	return ret
 }
 
-
 func outputRun(parent item, item item) string {
 	var out string
 
 	switch parent.typ {
 	case itemGo:
-		return outputGo(item.val, parent.withError)	// straight go code
+		return outputGo(item.val, parent.withError) // straight go code
 
 	case itemText:
 		/*
-		-- Actually, below is not true. This might happen with named fragments.
-		if parent.typ == itemText {
-			// itemText within itemText does not make sense, so we treat it like an interface instead. Similar to compressed interface format.
-			parent.typ = itemInterface
-			return outputValue(parent, item.val)
-		}*/
+			-- Actually, below is not true. This might happen with named fragments.
+			if parent.typ == itemText {
+				// itemText within itemText does not make sense, so we treat it like an interface instead. Similar to compressed interface format.
+				parent.typ = itemInterface
+				return outputValue(parent, item.val)
+			}*/
 		return outputText(parent, item.val)
 
 	case itemConvert:
@@ -78,7 +76,7 @@ func outputRun(parent item, item item) string {
 func outputGo(code string, withErr bool) string {
 	if withErr {
 		return fmt.Sprintf(
-			"\n{\n err := %s\n" +
+			"\n{\n err := %s\n"+
 				"if err != nil { return err}\n}\n", code)
 	} else {
 		return code
@@ -93,7 +91,6 @@ func outputValue(item item, val string) string {
 	} else if item.escaped {
 		writer = "buf.WriteString(html.EscapeString(%s))"
 	}
-
 
 	var formatter string
 
@@ -116,9 +113,9 @@ func outputValue(item item, val string) string {
 
 	if item.withError {
 		return fmt.Sprintf(
-			"\n{\nv, err := %s\n" +
-			"%s\n" +
-			"if err != nil { return err}\n}\n", val,
+			"\n{\nv, err := %s\n"+
+				"%s\n"+
+				"if err != nil { return err}\n}\n", val,
 			fmt.Sprintf(writer, fmt.Sprintf(formatter, "v")))
 	} else {
 		return fmt.Sprintf("\n%s\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, val)))
@@ -139,7 +136,6 @@ func outputText(item item, val string) string {
 		return "\nbuf.WriteString(`" + val + "`)\n"
 	}
 }
-
 
 // Convert text to html
 func outputHtml(item item, val string) string {
