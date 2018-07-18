@@ -53,7 +53,7 @@ func outputRun(parent item, item item) string {
 	case itemGo:
 		return outputGo(item.val, parent.withError) // straight go code
 
-	case itemText:
+	case itemText: fallthrough
 	case itemStrictBlock:
 		/*
 			-- Actually, below is not true. This might happen with named fragments.
