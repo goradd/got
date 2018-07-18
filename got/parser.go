@@ -54,6 +54,7 @@ func outputRun(parent item, item item) string {
 		return outputGo(item.val, parent.withError) // straight go code
 
 	case itemText:
+	case itemStrictBlock:
 		/*
 			-- Actually, below is not true. This might happen with named fragments.
 			if parent.typ == itemText {

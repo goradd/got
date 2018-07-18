@@ -206,14 +206,24 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 }
 
 func (l *lexer) lexStrictBlock(nextState stateFn) stateFn {
-	offset := strings.Index(l.input[l.start:], tokEndBlock)
+	l.ignore()
+	l.acceptRun()
+	endToken := l.currentString()
+	if !l.isAtCloseTag() {
+		return l.errorf("Expected close tag")
+	}
+	l.ignoreCloseTag()
+	endToken = "{{" + endToken + "}}"
+
+	offset := strings.Index(l.input[l.start:], endToken)
 	if offset == -1 {
 		return l.errorf("No strict end block found")
 	}
 	l.pos += offset
 	l.emitType(itemRun)
-	l.start += len(tokEndBlock) // skip end block
-	l.width = len(tokEndBlock)
+	l.start += len(endToken) // skip end token
+	l.pos = l.start
+	l.width = 0
 	l.emitType(itemEnd)
 	return nextState
 }

@@ -127,7 +127,7 @@ func init() {
 	tokens["{{e"] = item{typ: itemGo, withError: true}
 	tokens["{{err"] = item{typ: itemGo, withError: true}
 
-	tokens["{{begin}}"] = item{typ: itemStrictBlock}
+	tokens["{{begin"] = item{typ: itemStrictBlock}
 	tokens["{{end}}"] = item{typ: itemEndBlock}
 	tokens["{{define"] = item{typ: itemNamedBlock} // must follow with a name and a close tag
 	tokens["{{<"] = item{typ: itemNamedBlock}      // must follow with a name and a close tag

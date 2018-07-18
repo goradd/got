@@ -337,7 +337,15 @@ join the line with the next line.
 - `{{for `*code*`}}` Similar to the if tag, this starts a "for" block. End it with ```{{for}}```. Treat it the same
   as any go `for`, meaning it can do standard iteration or be used in a range.
   Example: ```{{for num,item := range items }}<p>Item {{num}} is {{item}}</p>{{for}}```
-
+- `{{begin *endTag*}}` Starts a strict text block and turns off the got parser. This is useful for situations where you may
+   be generating text that contains things that look like got tags, or perhaps you are using got to generate got.
+   End the block with a `{{*endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. The following
+   example will output the entire second line of code with no changes, including all brackets:
+```
+{{begin mystrict}}
+{{! This is verbatim code }}{{< not included}}
+{{mystrict}}
+```
 
 ## Bigger Example
 
