@@ -65,13 +65,22 @@ got [options] [files]
 
 options:
 	- o: The output directory. If not specified, files will be output at the same location as the corresponding template.
+	     Relative paths must start with a dot (.) or double-dot (..). Absolute paths must start with a forward slash (/).
+	     If you start the path with a word, it will attempt to search relative to the current GOPATH directory, or in the
+	     absence of a GOPATH, it will try to find a src/ directory as a sibling of got's parent directory.
+	     In other words, it will attempt to look for the same place that an *import* statement would.
 	- t fileType: If set, will process all files in the current directory with this suffix. If not set, you must specify the files at the end of the command line.
 	- i: Run `goimports` on the output files, rather than `go fmt`
 	- I directories and/or files:  A list of semicolon separated directories and/or files. If a directory, it is used as 
 		the search path for include files. If a file, it is automatically added to the front of every file that is
 		processed.  Directories are searched in the order specified and first matching file will be used. It
-		 will always look in the current directory last unless the current directory is specified
-		 in the list in another location.
+		will always look in the current directory last unless the current directory is specified
+		in the list in another location. Relative paths must start with a dot (.) or double-dot (..). 
+		Absolute paths must start with a forward slash (/).
+        If you start the path with a word, it will attempt to search relative to the current GOPATH directory, or in the
+        absence of a GOPATH, it will try to find a src/ directory as a sibling of got's parent directory.
+        In other words, it will attempt to look for the same place that an *import* statement would.
+
 
 example:
 	got -t got -i -o /templates

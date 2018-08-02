@@ -129,7 +129,7 @@ func main() {
 	if includes != "" {
 		i := strings.Split(includes, ";")
 		for _, i2 := range i {
-			path, _ := filepath.Abs(i2)
+			path := getRealPath(i2)
 			if fi, err := os.Stat(path); err != nil {
 				fmt.Println("Include path " + path + " does not exist.")
 			} else if fi.IsDir() {
@@ -140,15 +140,17 @@ func main() {
 		}
 	}
 
-	got.IncludePaths = append(got.IncludePaths, ".")
+	got.IncludePaths = append(got.IncludePaths, getRealPath("."))
 
-	if outDir != "" {
-		dir, err := filepath.Abs(outDir)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		outDir = dir
+	outDir = getRealPath(outDir)
+
+	dstInfo, err := os.Stat(outDir)
+	if err != nil {
+		panic(fmt.Sprintf("The output directory %s does not exist. Create the output directory and run it again.", outDir))
+	}
+
+	if !dstInfo.Mode().IsDir() {
+		panic("The output directory specified is not a directory")
 	}
 
 	//var err error
@@ -163,4 +165,35 @@ func main() {
 			writeFile(s, file, outDir, runImports)
 		}
 	}
+}
+
+func getRealPath(path string) string {
+	if path != "" {
+		if !strings.ContainsAny(path[0:1], "./") {
+			// if path is of the form dir/dir, try to reproduce the same path as if this was from an import statement
+			if gopath,ok := os.LookupEnv("GOPATH"); ok {
+				if gopath[len(gopath)-1:len(gopath)] != "/" {
+					gopath += "/"
+				}
+				gopath += "src/"
+				path = gopath + path
+			} else {
+				if path, err := os.Executable(); err == nil {
+					path = filepath.Dir(filepath.Dir(path)) + "/src"
+					dstInfo, err := os.Stat(path)
+					if err == nil && dstInfo.Mode().IsDir() {
+						// exists and is a directory, so make it relative to the path
+						path = path + "/" + path
+					}
+				}
+			}
+		}
+		// Remove any backups. Check for errors.
+		var err error
+		path, err = filepath.Abs(path)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return path
 }
