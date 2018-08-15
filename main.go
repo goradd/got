@@ -107,11 +107,13 @@ func main() {
 	var typ string
 	var runImports bool
 	var includes string
+	var inputDirectory string
 
 	flag.StringVar(&outDir, "o", "", "Output directory")
-	flag.StringVar(&typ, "t", "", "Will process all files with this suffix in current directory")
+	flag.StringVar(&typ, "t", "", "Will process all files with this suffix in current directory, or the directory given by the -d directive.")
 	flag.BoolVar(&runImports, "i", false, "Run goimports on the file to automatically add your imports to the file. You will need to install goimports to do this.")
 	flag.StringVar(&includes, "I", "", "The list of directories to look in to find template include files. Separate with semicolons.")
+	flag.StringVar(&inputDirectory, "d", "", "The directory to search for files if using the -t directive. Otherwise the current directory will be searched.")
 	flag.Parse()
 	files := flag.Args()
 
@@ -122,6 +124,7 @@ func main() {
 		fmt.Println("-t: process all files with this suffix in the current directory. Otherwise, specify specific files at the end.")
 		fmt.Println("-i: run goimports on the result files to automatically fix up the import statement and format the file. You will need goimports installed.")
 		fmt.Println("-I: the list of directories to search for include files, or files to prepend before every processed file. Files are searched in the order given, and first one found will be used.")
+		fmt.Println("-d: The directory to search for files if using the -t directive.")
 	}
 
 	got.IncludePaths = []string{}
@@ -140,7 +143,18 @@ func main() {
 		}
 	}
 
-	got.IncludePaths = append(got.IncludePaths, getRealPath("."))
+	if inputDirectory != "" {
+		inputDirectory = getRealPath(inputDirectory)
+		if inputDirectory[len(inputDirectory)-1:len(inputDirectory)] != "/" {
+			inputDirectory += "/"
+		}
+	}
+
+	if inputDirectory == "" {
+		got.IncludePaths = append(got.IncludePaths, getRealPath("."))
+	} else {
+		got.IncludePaths = append(got.IncludePaths, inputDirectory)
+	}
 
 	outDir = getRealPath(outDir)
 
@@ -156,7 +170,7 @@ func main() {
 	//var err error
 
 	if typ != "" {
-		files, _ = filepath.Glob("*." + typ)
+		files, _ = filepath.Glob(inputDirectory + "*." + typ)
 	}
 
 	for _, file := range files {
