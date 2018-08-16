@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"go/build"
 )
 
 func processFile(file string) string {
@@ -182,32 +183,49 @@ func main() {
 }
 
 func getRealPath(path string) string {
-	if path != "" {
-		if !strings.ContainsAny(path[0:1], "./") {
-			// if path is of the form dir/dir, try to reproduce the same path as if this was from an import statement
-			if gopath,ok := os.LookupEnv("GOPATH"); ok {
-				if gopath[len(gopath)-1:len(gopath)] != "/" {
-					gopath += "/"
-				}
-				gopath += "src/"
-				path = gopath + path
-			} else {
-				if path, err := os.Executable(); err == nil {
-					path = filepath.Dir(filepath.Dir(path)) + "/src"
-					dstInfo, err := os.Stat(path)
-					if err == nil && dstInfo.Mode().IsDir() {
-						// exists and is a directory, so make it relative to the path
-						path = path + "/" + path
-					}
-				}
-			}
-		}
-		// Remove any backups. Check for errors.
-		var err error
-		path, err = filepath.Abs(path)
-		if err != nil {
-			panic(err)
-		}
+	path = filepath.FromSlash(path)
+	if strings.Index(path, "GOPATH") == 0 {
+		path = goPath() + path[6:]
+	}
+
+	var err error
+	path, err = filepath.Abs(path)
+	if err != nil {
+		panic(err)
 	}
 	return path
 }
+
+func goPath() string {
+	var path string
+	goPaths := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))
+	if len(goPaths) == 0 {
+		path = build.Default.GOPATH
+	} else if goPaths[0] == "" {
+		path = build.Default.GOPATH
+	} else {
+		path = goPaths[0]
+	}
+
+	// clean path so it does not end with a path separator
+	if path[len(path)-1] == os.PathSeparator {
+		path = path[:len(path)-1]
+	}
+
+	// If the GOPATH is empty, then see if the current executable looks like it is in a project
+	if path == "" {
+		if path2, err := os.Executable(); err == nil {
+			path2 = filepath.Join(filepath.Dir(filepath.Dir(path2)), "src")
+			dstInfo, err := os.Stat(path)
+			if err == nil && dstInfo.IsDir() {
+				path = path2
+			}
+		}
+	}
+
+	path,_ = filepath.Abs(path)
+
+	// TODO: GoPath may go away, so we might need to use another way to search for the current go project structure
+	return path
+}
+
