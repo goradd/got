@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+	"text/scanner"
 )
 
 const eof = -1
@@ -434,8 +435,32 @@ func processParams(in, paramString string) (out string, err error) {
 
 func splitParams(paramString string) (params []string, err error) {
 	var currentItem string
-	var cleanItem string
 
+	var s scanner.Scanner
+	s.Init(strings.NewReader(paramString))
+	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
+		text := s.TokenText()
+		if text == "," {
+			currentItem = strings.TrimSpace(currentItem)
+			if currentItem != "" {
+				if currentItem[0] == '"' && currentItem[len(currentItem) - 1] == '"' {
+					currentItem = currentItem[1:len(currentItem)-1]
+				}
+				params = append(params, currentItem)
+				currentItem = ""
+			}
+		} else {
+			currentItem += text
+		}
+	}
+	if currentItem != "" {
+		if currentItem[0] == '"' && currentItem[len(currentItem)-1] == '"' {
+			currentItem = currentItem[1 : len(currentItem)-1]
+		}
+		params = append(params, currentItem)
+	}
+	return
+/*
 	items := strings.Split(paramString, ",")
 
 	// Check to see if we split something surrounded by quotes
@@ -511,6 +536,7 @@ func splitParams(paramString string) (params []string, err error) {
 		err = fmt.Errorf("Defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
 	}
 	return
+*/
 }
 
 func cleanEscapedQuotes(s string) string {
