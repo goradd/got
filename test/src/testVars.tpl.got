@@ -12,6 +12,14 @@ And a float: {{f 45/6 }}
 Stringer: {{v "something" }}
 }}
 
+// Test for newlines here
+for i := 0; i < 5; i++ {
+{{
+    {{= "Num"}} = {{= strconv.Itoa(i) }}
+}}
+
+}
+
 {{# Here is a comment }}
 
 {{end}}

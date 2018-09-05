@@ -3,3 +3,8 @@ Here is a number: -5
 And another: 6
 And a float: 7
 Stringer: something
+    Num = 0
+    Num = 1
+    Num = 2
+    Num = 3
+    Num = 4

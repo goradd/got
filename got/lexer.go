@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 	"text/scanner"
+	"path/filepath"
 )
 
 const eof = -1
@@ -238,12 +239,10 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	l.ignoreCloseTag()
 
 	var err error
-	if fileName[0] != '"' {
-		return l.errorf("Include file names must have quotes around them: %s", fileName)
-	}
-
-	if fileName,err = strconv.Unquote(fileName); err != nil {
-		return l.errorf("Include file name error: %s", err.Error())
+	if fileName[0] == '"' {
+		if fileName, err = strconv.Unquote(fileName); err != nil {
+			return l.errorf("Include file name error: %s", err.Error())
+		}
 	}
 
 	log.Println("Opening " + fileName)
@@ -252,22 +251,26 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	var buf []byte
 	if len(IncludePaths) > 0 {
 		for _, path := range IncludePaths {
-			if buf, err = ioutil.ReadFile(path + "/" + fileName); err == nil {
+			if buf, err = ioutil.ReadFile(filepath.Join(path, fileName)); err == nil {
 				break
 			}
 			if !os.IsNotExist(err) {
 				return l.errorf("File read error: %s", err.Error())
 			}
 		}
-	} else {
-		buf, err = ioutil.ReadFile(fileName)
+	}
+
+	if buf == nil || len(buf) == 0 {
+		buf, err = ioutil.ReadFile(filepath.Join(filepath.Dir(l.fileName), fileName))
 	}
 
 	if os.IsNotExist(err) {
 		s := "Could not find include file \"" + fileName + "\""
+		s += " in directories "
 		if len(IncludePaths) > 0 {
-			s += " in directories " + strings.Join(IncludePaths, ";")
+			s += strings.Join(IncludePaths, ";") + ":"
 		}
+		s += filepath.Dir(l.fileName)
 		return l.errorf(s)
 	}
 	if err != nil {
