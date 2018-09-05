@@ -1,0 +1,30 @@
+{{define package}}template{{end}}
+{{define name}}TestNewline{{end}}
+
+
+{{# This file is designed to test specific situations around when newlines should or should not be generated. }}
+{{define body}}
+{{
+Start of file. No extra newline should go above this line.
+
+Embedded go code should not start a newline {{g _=5 }}here.
+}}
+{{
+A newline ended last item, so do not start an additional newline.
+}}
+{{
+
+But if I add a blank line, then use it.
+
+}}
+
+{{
+If I embed another tag with no newline {{i 5 }}, keep going
+
+But if I end a new tag with a newline {{i 10 }}
+consider it
+
+}}
+{{end}}
+
+{{: "runner.inc" }}

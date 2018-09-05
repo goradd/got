@@ -1,0 +1,2 @@
+This is the temporary output directory for the tests. Got will turn the tests into go files, and then the test
+runner will run the resulting tests and compare the results against the matching test in the expected directory.

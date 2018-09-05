@@ -1,0 +1,12 @@
+Start of file. No extra newline should go above this line.
+
+Embedded go code should not start a newline here.
+A newline ended last item, so do not start an additional newline.
+
+But if I add a blank line, then use it.
+
+If I embed another tag with no newline 5, keep going
+
+But if I end a new tag with a newline 10
+consider it
+

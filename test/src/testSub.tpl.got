@@ -1,4 +1,4 @@
-package testOut
+package template
 
 import (
 	"bytes"
@@ -6,9 +6,9 @@ import (
 )
 
 {{< first }}
-fmt.Println("Here is some go code.")
+s := "Here is some go code."
 {{
-Here is some text to print
+Here is some text to print. {{= s }}
 }}
 {{end}}
 
@@ -16,13 +16,15 @@ Here is some text to print
 buf.WriteString("$1")
 {{end}}
 
-func TestSub(buf *bytes.Buffer) {
+func TestSub(buf *bytes.Buffer) (err error) {
 {{
 	Print me.
 }}
 
 	myTest2(buf)
 	myTest3(buf)
+	myTest4(buf)
+	return
 }
 
 func myTest2(buf *bytes.Buffer) {
@@ -53,3 +55,6 @@ Substituted:
 }}
 }
 
+func init() {
+    registerTest(TestSub, "TestSub")
+}

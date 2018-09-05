@@ -1,0 +1,33 @@
+{{define package}}template{{end}}
+{{define name}}TestVarsWithErr{{end}}
+
+
+{{define body}}
+{{= "Evaluates to a string" }}
+
+{{
+Here is the number: {{ie givesIntWithErr() }}
+And another: {{se givesStringWithErr() }}
+And a float: {{fe  givesFloatWithErr() }}
+}}
+
+{{# Here is a comment }}
+{{end}}
+
+{{: "runner.inc"}}
+
+
+func givesStringWithErr() (string,error) {
+	return "Me with no escaping", nil
+}
+
+func givesIntWithErr() (int,error) {
+	return -5, nil
+}
+
+func givesFloatWithErr() (float32, error) {
+	return 6.4, nil
+}
+
+
+

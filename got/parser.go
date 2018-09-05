@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"unicode/utf8"
 )
+
+var endedWithNewline = true
 
 type ast struct {
 	item  item
@@ -24,7 +27,11 @@ func parseItem(l *lexer, parent item) string {
 	for {
 		item = l.nextItem()
 
-		if item.typ == itemEOF || item.typ == itemEnd || item.typ == itemIgnore {
+		if item.typ == itemEOF {
+			endedWithNewline = true // prepare for next file
+			return ret
+		}
+		if item.typ == itemEnd || item.typ == itemIgnore {
 			return ret
 		}
 
@@ -38,7 +45,9 @@ func parseItem(l *lexer, parent item) string {
 			fmt.Println(item.val)
 			return ""
 		} else if item.typ == itemRun {
-			ret += outputRun(parent, item)
+			var out string
+			out, endedWithNewline = outputRun(parent, item, endedWithNewline)
+			ret += out
 		} else {
 			ret += parseItem(l, item)
 		}
@@ -46,32 +55,27 @@ func parseItem(l *lexer, parent item) string {
 	return ret
 }
 
-func outputRun(parent item, item item) string {
-	var out string
-
+func outputRun(parent item, item item, prevTextEndedWithNewline bool) (string, bool) {
 	switch parent.typ {
 	case itemGo:
-		return outputGo(item.val, parent.withError) // straight go code
+		return outputGo(item.val, parent.withError), prevTextEndedWithNewline // straight go code
 
 	case itemText: fallthrough
 	case itemStrictBlock:
-		/*
-			-- Actually, below is not true. This might happen with named fragments.
-			if parent.typ == itemText {
-				// itemText within itemText does not make sense, so we treat it like an interface instead. Similar to compressed interface format.
-				parent.typ = itemInterface
-				return outputValue(parent, item.val)
-			}*/
-		return outputText(parent, item.val)
+		r,_ := utf8.DecodeLastRuneInString(item.val)
+		thisEndedWithNewline := r == '\n'
+		if !prevTextEndedWithNewline && item.newline {
+			item.val = "\n" + item.val // TODO: Windows newline if on windows?
+		}
+		return outputText(parent, item.val), thisEndedWithNewline
 
 	case itemConvert:
-		return outputHtml(parent, item.val)
+		return outputHtml(parent, item.val), false
 
 	default:
-		return outputValue(parent, item.val)
+		return outputValue(parent, item.val), false
 
 	}
-	return out
 }
 
 func outputGo(code string, withErr bool) string {
@@ -124,10 +128,14 @@ func outputValue(item item, val string) string {
 
 }
 
+// outputText sends plain text to the template. There are some nuances here.
+// The val includes the space character that comes after the opening tag. We may
+// or may not use that character, depending on the circumstances.
 func outputText(item item, val string) string {
 	if val == "" {
 		return ""
 	}
+
 	if item.escaped {
 		val = html.EscapeString(val)
 	}

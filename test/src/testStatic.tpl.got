@@ -1,15 +1,8 @@
-package testOut
+{{define package}}template{{end}}
+{{define name}}TestStatic{{end}}
 
-import (
-	"bytes"
-	"fmt"
-)
+{{define body}}
 
-type Translater interface {
-	Translate(string, *bytes.Buffer)
-}
-
-func TestStatic(buf *bytes.Buffer) {
 {{ Here {{go buf.WriteString("is") }} some code wrapping text escaping to go. }}
 
 {{
@@ -23,7 +16,13 @@ func TestStatic(buf *bytes.Buffer) {
 	that is both escaped and has
 	html paragraphs and breaks inserted.
 }}
+{{end}}
 
+
+{{: "runner.inc" }}
+
+type Translater interface {
+	Translate(string, *bytes.Buffer)
 }
 
 func translateTest(t Translater, buf *bytes.Buffer) {

@@ -1,4 +1,4 @@
-package testOut
+package template
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 
 {{: "testInclude.inc" }}
 
-func TestInclude(buf *bytes.Buffer) {
+func TestInclude(buf *bytes.Buffer) (err error) {
 {{
 The end.
 }}
@@ -27,4 +27,9 @@ The end.
 {{# Including an html file in text mode }}
 {{: "testInclude3.html" }}
 }}
+    return
+}
+
+func init() {
+    registerTest(TestInclude, "TestInclude")
 }

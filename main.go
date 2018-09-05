@@ -48,11 +48,11 @@ func processFile(file string) string {
 
 func writeFile(s string, file string, outDir string, runImports bool) {
 
-	i := strings.LastIndex(file, ".")
-
 	dir := filepath.Dir(file)
 	dir, _ = filepath.Abs(dir)
 	file = filepath.Base(file)
+
+	i := strings.LastIndex(file, ".")
 
 	if i < 0 {
 		file = file + ".go"
@@ -103,6 +103,8 @@ func execCommand(command string) {
 	}
 }
 
+var args string	// A neat little trick to directly test the main function. If we are testing, this will get set.
+
 func main() {
 	var outDir string
 	var typ string
@@ -115,7 +117,12 @@ func main() {
 	flag.BoolVar(&runImports, "i", false, "Run goimports on the file to automatically add your imports to the file. You will need to install goimports to do this.")
 	flag.StringVar(&includes, "I", "", "The list of directories to look in to find template include files. Separate with semicolons.")
 	flag.StringVar(&inputDirectory, "d", "", "The directory to search for files if using the -t directive. Otherwise the current directory will be searched.")
-	flag.Parse()
+	if args == "" {
+		flag.Parse() // regular run of program
+	} else {
+		// test run
+		flag.CommandLine.Parse(strings.Split(args, " "))
+	}
 	files := flag.Args()
 
 	if len(os.Args[1:]) == 0 {
@@ -146,8 +153,8 @@ func main() {
 
 	if inputDirectory != "" {
 		inputDirectory = getRealPath(inputDirectory)
-		if inputDirectory[len(inputDirectory)-1:len(inputDirectory)] != "/" {
-			inputDirectory += "/"
+		if inputDirectory[len(inputDirectory)-1] != filepath.Separator {
+			inputDirectory += string(filepath.Separator)
 		}
 	}
 

@@ -13,6 +13,7 @@ type item struct {
 	translate  bool
 	htmlBreaks bool   // adds html break tags in exchange for newlines
 	val        string // filled in by lexer after initialization
+	newline	   bool   // a run of text should start on a new line
 }
 
 const (
@@ -29,7 +30,7 @@ const (
 	itemSubstitute // substitutes a named block
 	itemInclude    // immediately includes another file during lexing
 
-	itemEnd // ends any tag below
+	itemEnd
 	itemConvert
 	itemGo
 	itemText

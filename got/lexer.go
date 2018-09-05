@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -51,7 +50,6 @@ type lexer struct {
 	input     string    // string being scanned
 	start     int       // start position of item
 	pos       int       // current position
-	lastPos   int       // last position of item read
 	width     int       // width of last rune
 	items     chan item // channel of scanned items
 	hasError  bool
@@ -74,7 +72,7 @@ func (l *lexer) nextItem() item {
 
 	select {
 	case i := <-l.items:
-		l.lastPos = l.pos
+		//l.lastPos = l.pos
 		return i
 	case <-time.After(10 * time.Second): // Internal error? We are supposed to detect EOF situations before we get here
 		//close(l.items)
@@ -93,15 +91,15 @@ func Lex(input string, fileName string) *lexer {
 }
 
 func (l *lexer) emitType(t itemType) {
-	item := item{typ: t, val: l.input[l.start:l.pos]}
-	l.items <- item
-	l.start = l.pos
-	//fmt.Printf("%v", item)
-
+	item := item{typ: t}
+	l.emit(item)
 }
 
 func (l *lexer) emit(i item) {
-	i.val = l.input[l.start:l.pos]
+	if i.val == "" {
+		i.val = l.input[l.start:l.pos]
+	}
+
 	l.items <- i
 	l.start = l.pos
 	//fmt.Printf("%v", item)
@@ -110,10 +108,7 @@ func (l *lexer) emit(i item) {
 
 func (l *lexer) emitRun(prefix string, suffix string) {
 	var i = item{typ: itemRun, val: prefix + l.input[l.start:l.pos] + suffix}
-	l.items <- i
-	l.start = l.pos
-	//fmt.Printf("%v", item)
-
+	l.emit(i)
 }
 
 // Starting state. We start in GO mode.
@@ -208,6 +203,10 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 
 func (l *lexer) lexStrictBlock(nextState stateFn) stateFn {
 	l.ignore()
+	newline := isEndOfLine(l.peek())
+	if newline {
+		l.ignoreNewline()
+	}
 	l.acceptRun()
 	endToken := l.currentString()
 	if !l.isAtCloseTag() {
@@ -221,7 +220,7 @@ func (l *lexer) lexStrictBlock(nextState stateFn) stateFn {
 		return l.errorf("No strict end block found")
 	}
 	l.pos += offset
-	l.emitType(itemRun)
+	l.emit(item{typ:itemRun, newline:newline})
 	l.start += len(endToken) // skip end token
 	l.pos = l.start
 	l.width = 0
@@ -232,26 +231,25 @@ func (l *lexer) lexStrictBlock(nextState stateFn) stateFn {
 func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	l.ignore()
 	l.acceptRun()
-	fileName := l.currentString()
+	fileName := strings.TrimSpace(l.currentString())
 	if !l.isAtCloseTag() {
 		return l.errorf("Expected close tag")
 	}
 	l.ignoreCloseTag()
 
-	fileName = strings.TrimSpace(fileName)
-	fileName = strings.Trim(fileName, "\"")
+	var err error
+	if fileName[0] != '"' {
+		return l.errorf("Include file names must have quotes around them: %s", fileName)
+	}
 
-	// Add relative processing from the current path
-	dir := filepath.Dir(l.fileName)
-	if dir != "." {
-		fileName = dir + "/" + fileName
+	if fileName,err = strconv.Unquote(fileName); err != nil {
+		return l.errorf("Include file name error: %s", err.Error())
 	}
 
 	log.Println("Opening " + fileName)
 
 	// find the file from the include paths
 	var buf []byte
-	var err error
 	if len(IncludePaths) > 0 {
 		for _, path := range IncludePaths {
 			if buf, err = ioutil.ReadFile(path + "/" + fileName); err == nil {
@@ -440,11 +438,21 @@ func splitParams(paramString string) (params []string, err error) {
 	s.Init(strings.NewReader(paramString))
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 		text := s.TokenText()
+		if len(text) > 0 && text[0] == '"' && (len(text) == 1 || text[len(text)-1] != '"') {
+			err = fmt.Errorf("Defined block parameter has a beginning quote with no ending quote: %s", text)
+			return
+		}
 		if text == "," {
 			currentItem = strings.TrimSpace(currentItem)
 			if currentItem != "" {
-				if currentItem[0] == '"' && currentItem[len(currentItem) - 1] == '"' {
-					currentItem = currentItem[1:len(currentItem)-1]
+				if currentItem[0] == '"' {
+					if len(currentItem) > 1 && currentItem[len(currentItem) - 1] == '"' {
+						//currentItem = currentItem[1 : len(currentItem)-1]
+						currentItem,err = strconv.Unquote(currentItem)
+					} else {
+						err = fmt.Errorf("Defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
+						return
+					}
 				}
 				params = append(params, currentItem)
 				currentItem = ""
@@ -454,8 +462,15 @@ func splitParams(paramString string) (params []string, err error) {
 		}
 	}
 	if currentItem != "" {
-		if currentItem[0] == '"' && currentItem[len(currentItem)-1] == '"' {
-			currentItem = currentItem[1 : len(currentItem)-1]
+		if currentItem[0] == '"' {
+
+			if len(currentItem) > 1 && currentItem[len(currentItem) - 1] == '"' {
+				//currentItem = currentItem[1 : len(currentItem)-1]
+				currentItem,err = strconv.Unquote(currentItem)
+			} else {
+				err = fmt.Errorf("Defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
+				return
+			}
 		}
 		params = append(params, currentItem)
 	}
@@ -641,9 +656,14 @@ func (l *lexer) lexConvert(nextState stateFn) stateFn {
 }
 
 func (l *lexer) lexText(nextState stateFn) stateFn {
+	newline := isEndOfLine(l.peek())
+	if newline {
+		l.ignoreNewline()
+	}
+
 	if !l.isAtCloseTag() {
 		l.acceptRun()
-		l.emitType(itemRun)
+		l.emit(item{typ:itemRun, newline:newline})
 	}
 
 	if l.isAtCloseTag() {
@@ -672,7 +692,7 @@ func isSpace(r rune) bool {
 	return r == ' ' || r == '\t'
 }
 
-// isSpace reports whether r is a space character.
+// isWhiteSpace reports whether r is any kind of white space character.
 func isWhiteSpace(r rune) bool {
 	return isSpace(r) || isEndOfLine(r)
 }
@@ -713,6 +733,7 @@ func (l *lexer) isAtCloseTag() bool {
 		return false // close to eof
 	}
 
+	// This is the way to prevent generating a newline at the end of text
 	if l.peek() == ' ' && l.input[l.pos+1:l.pos+3] == tokEnd {
 		return true
 	}
@@ -735,7 +756,9 @@ func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 // peek returns but does not consume the next rune in the input.
 func (l *lexer) peek() rune {
 	r := l.next()
-	l.backup()
+	if r != eof {
+		l.backup()
+	}
 	return r
 }
 
@@ -861,12 +884,13 @@ func (l *lexer) ignoreWhiteSpace() {
 	}
 }
 
+// ignoreOneSpace ignores one space, INCLUDING white space characters.
 func (l *lexer) ignoreOneSpace() {
 	r := l.next()
 	switch {
 	case r == eof:
 		return
-	case isWhiteSpace(r):
+	case isSpace(r):
 		l.ignore()
 	default:
 		l.backup()
@@ -874,13 +898,23 @@ func (l *lexer) ignoreOneSpace() {
 	}
 }
 
+// ignoreNewline steps over a newline and ignores it. If we are not on a newline, nothing will happen.
 func (l *lexer) ignoreNewline() {
 	r := l.next()
 	switch {
 	case r == eof:
 		return
-	case isEndOfLine(r):
+	case r == '\r':
+		r = l.next()
+		if r == '\n' {
+			l.ignore()
+		} else {
+			l.backup()
+		}
+		return
+	case r == '\n':
 		l.ignore()
+		return
 	default:
 		l.backup()
 		return
