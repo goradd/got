@@ -42,8 +42,7 @@ Substituted:
 {{second Me}}
 }
 
-{{define third}}
-{{g
+{{define third}}{{g
 buf.WriteString("$1")
 }}
 {{end}}

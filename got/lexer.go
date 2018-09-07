@@ -151,8 +151,9 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 	switch i.typ {
 	case itemStrictBlock:
 		l.emit(i)
+		newline := isEndOfLine(l.peek())
 		l.ignoreOneSpace()
-		return l.lexStrictBlock(priorState)
+		return l.lexStrictBlock(priorState, newline)
 
 	case itemInclude:
 		return l.lexInclude(priorState)
@@ -182,8 +183,9 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 
 	case itemText:
 		l.emit(i)
+		newline := isEndOfLine(l.peek())
 		l.ignoreOneSpace()
-		return l.lexText(priorState)
+		return l.lexText(priorState, newline)
 
 	case itemIf:
 		return l.lexIf(priorState)
@@ -202,12 +204,8 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 	}
 }
 
-func (l *lexer) lexStrictBlock(nextState stateFn) stateFn {
+func (l *lexer) lexStrictBlock(nextState stateFn, newline bool) stateFn {
 	l.ignore()
-	newline := isEndOfLine(l.peek())
-	if newline {
-		l.ignoreNewline()
-	}
 	l.acceptRun()
 	endToken := l.currentString()
 	if !l.isAtCloseTag() {
@@ -251,7 +249,9 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	var buf []byte
 	if len(IncludePaths) > 0 {
 		for _, path := range IncludePaths {
-			if buf, err = ioutil.ReadFile(filepath.Join(path, fileName)); err == nil {
+			fileName2 := filepath.Join(path, fileName)
+			if buf, err = ioutil.ReadFile(fileName2); err == nil {
+				fileName = fileName2
 				break
 			}
 			if !os.IsNotExist(err) {
@@ -261,7 +261,11 @@ func (l *lexer) lexInclude(nextState stateFn) stateFn {
 	}
 
 	if buf == nil || len(buf) == 0 {
-		buf, err = ioutil.ReadFile(filepath.Join(filepath.Dir(l.fileName), fileName))
+		fileName2 := filepath.Join(filepath.Dir(l.fileName), fileName)
+		buf, err = ioutil.ReadFile(fileName2)
+		if err == nil {
+			fileName = fileName2
+		}
 	}
 
 	if os.IsNotExist(err) {
@@ -658,11 +662,7 @@ func (l *lexer) lexConvert(nextState stateFn) stateFn {
 	return l.lexTag(nextConvert)
 }
 
-func (l *lexer) lexText(nextState stateFn) stateFn {
-	newline := isEndOfLine(l.peek())
-	if newline {
-		l.ignoreNewline()
-	}
+func (l *lexer) lexText(nextState stateFn, newline bool) stateFn {
 
 	if !l.isAtCloseTag() {
 		l.acceptRun()
@@ -684,7 +684,7 @@ func (l *lexer) lexText(nextState stateFn) stateFn {
 	}
 
 	nextText := func(l *lexer) stateFn {
-		return (*lexer).lexText(l, nextState)
+		return (*lexer).lexText(l, nextState, false)
 	}
 
 	return l.lexTag(nextText)
@@ -793,6 +793,9 @@ func (l *lexer) acceptUntil(terminators string) {
 
 func (l *lexer) acceptTag() string {
 	startPos := l.pos
+	if !isTagChar(l.peek()) {
+		panic("Accept tag is not at the start of a tag")
+	}
 	for {
 		r := l.next()
 		if !isTagChar(r) {
@@ -892,6 +895,17 @@ func (l *lexer) ignoreOneSpace() {
 	r := l.next()
 	switch {
 	case r == eof:
+		return
+	case r == '\r':
+		r = l.next()
+		if r == '\n' {
+			l.ignore()
+		} else {
+			l.backup()
+		}
+		return
+	case r == '\n':
+		l.ignore()
 		return
 	case isSpace(r):
 		l.ignore()
