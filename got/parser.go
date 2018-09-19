@@ -140,9 +140,9 @@ func outputText(item item, val string) string {
 		val = html.EscapeString(val)
 	}
 	if item.translate {
-		return "\nt.Translate(`" + val + "`, buf)\n"
+		return "\nt.Translate(" + quoteText(val) + ", buf)\n"
 	} else {
-		return "\nbuf.WriteString(`" + val + "`)\n"
+		return "\nbuf.WriteString(" + quoteText(val) + ")\n"
 	}
 }
 
@@ -157,11 +157,18 @@ func outputHtml(item item, val string) string {
 	val = "<p>" + val + "</p>\n"
 
 	if item.translate {
-		return "\nt.Translate(buf, `" + val + "`)\n"
+		return "\nt.Translate(buf, " + quoteText(val) + ")\n"
 	} else {
-		return "\nbuf.WriteString(`" + val + "`)\n"
+		return "\nbuf.WriteString(" + quoteText(val) + ")\n"
 	}
 
+}
+
+// Generally speaking, text is quoted with a backtick character. However, there is a special case. If the text actually
+// contains a backtick characrer, we cannot use backticks to quote them, but rather double-quotes. This function prepares
+// text, looking for these backticks, and then returns a golang quoted text that can be suitably used in all situations.
+func quoteText(val string) string {
+	return "`" + strings.Replace(val, "`", "` + \"`\" + `", -1) + "`"
 }
 
 func outputTruncate(n string) string {

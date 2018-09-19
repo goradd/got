@@ -1,4 +1,5 @@
 Here is some code wrapping text escaping to go.
+Testing quotes: "'`
 <p>
 Escaped html &lt;
 </p>

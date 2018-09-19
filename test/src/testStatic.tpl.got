@@ -6,6 +6,10 @@
 {{ Here {{go buf.WriteString("is") }} some code wrapping text escaping to go. }}
 
 {{
+Testing quotes: "'`
+}}
+
+{{
 <p>
 {{! Escaped html < }}
 </p>
