@@ -15,15 +15,15 @@ import (
 func TestGot(t *testing.T) {
 	// args is a global in the main package just for testing
 
-	args = "-t got -i -o GOPATH/src/github.com/spekary/got/test/template -I GOPATH/src/github.com/spekary/got/test/src/inc -d GOPATH/src/github.com/spekary/got/test/src"
+	args = "-t got -i -o github.com/spekary/got/test/template -I github.com/spekary/got/test/src/inc -d github.com/spekary/got/test/src"
 
 	main()
 
-	testPath := filepath.Join(goPath(), "src", "github.com", "spekary", "got", "test")
+	testPath := filepath.Join(`github.com/spekary/got/test`)
 	runnerPath := filepath.Join(testPath, "runner", "runner.go")
 	comparePath := filepath.Join(testPath, "compare")
 	expectedPath := filepath.Join(testPath, "expected")
-	execCommand("go run " + runnerPath + " " + comparePath)
+	ExecuteShellCommand("go run " + runnerPath + " " + comparePath)
 
 	// compare the outputs and report differences
 

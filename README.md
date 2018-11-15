@@ -65,8 +65,6 @@ got [options] [files]
 
 options:
 	- o: The output directory. If not specified, files will be output at the same location as the corresponding template.
-	     Start a path with "GOPATH" to have it substitute the current gopath. For example, 
-	     GOPATH/src/dir1 will put the output in the  dir1 directory in the src directory.
 	- t fileType: If set, will process all files in the current directory with this suffix. If not set, you must specify the files at the end of the command line.
 	- i: Run `goimports` on the output files, rather than `go fmt`
 	- I directories and/or files:  A list of semicolon separated directories and/or files. If a directory, it is used as 
@@ -75,13 +73,17 @@ options:
 		will always look in the current directory last unless the current directory is specified
 		in the list in another location. Relative paths must start with a dot (.) or double-dot (..). 
 		Absolute paths must start with a forward slash (/).
-		Start a path with "GOPATH" to have it substitute the current gopath.
 
+When running on go 1.11, if the output directory or an include path starts with a module path, the actual disk location 
+will be substituted. On Go 1.10 or lower, a path will be compared against all import paths. Since the import paths
+depend on the directory where this is run, it is important to make sure the current working directory is the same as
+the application source you want to inspect.
 
 examples:
 	got -t got -i -o ../templates
-	got -I .;../tmpl;GOPATH/src/projectTemplates file1.tmpl file2.tmpl
+	got -I .;../tmpl;example.com/projectTemplates file1.tmpl file2.tmpl
 ```
+
 ## Basic Syntax
 Template tags start with {{ and end with }}.
 
