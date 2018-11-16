@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/spekary/got/got"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -228,16 +227,15 @@ type pathType10 struct {
 // ModulePaths returns a listing of the paths of all the modules included in the build, keyed by module name, as if the build was run from the
 // current working directory. Note that Go's module support can change a build based on the go.mod file found, which is dependent
 // on the current working directory.
-// If we are building without module support, it will return ALL imported packages that are not standard go packages,
-// not just the module paths.
+//
+// If we are building without module support, it will return only the top paths to packages, since everything in this
+// situation will be relative to GOPATH.
 func ModulePaths() (ret map[string]string, err error) {
 	var outText string
 
 	outText, err = ExecuteShellCommand("go list -m -json all")
 
 	if err == nil {
-	//if GoVersionGreaterThan("1.10") {
-
 		if outText != "" {
 			ret = make (map[string]string)
 			// outText is not exactly json. We have to kind of tokenize it
@@ -248,7 +246,7 @@ func ModulePaths() (ret map[string]string, err error) {
 					var v pathType11
 					err = json.Unmarshal([]byte(out), &v)
 					if err != nil {
-						return
+						return nil,fmt.Errorf("Error unpacking json from go list command.\n%s\n%s", out, err.Error())
 					}
 					ret[v.Path] = v.Dir
 				}
@@ -258,8 +256,7 @@ func ModulePaths() (ret map[string]string, err error) {
 	} else {
 		// We don't have module support, so everything flows from top level locations
 		if outText, err = ExecuteShellCommand("go list -find -json all"); err != nil {
-			log.Fatal(outText, err)	// having a problem just running go list
-			return
+			return nil,fmt.Errorf("Error executing shell command %s, %s", outText, err.Error())
 		}
 
 		root := runtime.GOROOT()	// we are going to remove built in packages
@@ -273,8 +270,7 @@ func ModulePaths() (ret map[string]string, err error) {
 					var v pathType10
 					err = json.Unmarshal([]byte(out), &v)
 					if err != nil {
-						log.Fatal(out)
-						return
+						return nil,fmt.Errorf("Error unpacking json from go list command.\n%s\n%s", out, err.Error())
 					}
 					if len(root) <= len(v.Dir) && v.Dir[:len(root)] != root { // exclude built-in packages
 						// truncate the path up to the top level. We have to try to preserve the same format we were given.
