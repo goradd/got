@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"github.com/spekary/got/got"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -55,15 +56,15 @@ func main() {
 	got.IncludePaths = []string{}
 	got.IncludeFiles = []string{}
 	if includes != "" {
-		i := strings.Split(includes, ";")
+		i := filepath.SplitList(includes)
 		for _, i2 := range i {
-			path := getRealPath(i2)
-			if fi, err := os.Stat(path); err != nil {
-				fmt.Println("Include path " + path + " does not exist.")
+			p := getRealPath(i2)
+			if fi, err := os.Stat(p); err != nil {
+				fmt.Println("Include path " + p + " does not exist.")
 			} else if fi.IsDir() {
-				got.IncludePaths = append(got.IncludePaths, path)
+				got.IncludePaths = append(got.IncludePaths, p)
 			} else {
-				got.IncludeFiles = append(got.IncludeFiles, path)
+				got.IncludeFiles = append(got.IncludeFiles, p)
 			}
 		}
 	}
@@ -177,10 +178,7 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 		dir = outDir
 	}
 
-	if dir != "/" {
-		dir = dir + "/"
-	}
-	file = dir + file
+	file = filepath.Join(dir,file)
 
 	ioutil.WriteFile(file, []byte(s), os.ModePerm)
 
@@ -201,7 +199,8 @@ func ProcessString(input string, fileName string) string {
 }
 
 // ExecuteShellCommand executes a shell command in the current working directory and returns its output, if any.
-func ExecuteShellCommand(command string) (stdOutText string, err error) {
+// result is the combination of stdOut and stdErr
+func ExecuteShellCommand(command string) (result string, err error) {
 	parts := strings.Split(command, " ")
 	if len(parts) == 0 {
 		return
@@ -209,9 +208,9 @@ func ExecuteShellCommand(command string) (stdOutText string, err error) {
 
 	cmd := exec.Command(parts[0], parts[1:]...)
 
-	var stdOut []byte
-	stdOut, err = cmd.Output()
-	stdOutText = string(stdOut)
+	var out []byte
+	out, err = cmd.CombinedOutput()
+	result = string(out)
 	return
 }
 
@@ -234,10 +233,10 @@ type pathType10 struct {
 func ModulePaths() (ret map[string]string, err error) {
 	var outText string
 
-	if !GoVersionGreaterThan("1.10") {
-		if outText, err = ExecuteShellCommand("go list -m -json all"); err != nil {
-			return
-		}
+	outText, err = ExecuteShellCommand("go list -m -json all")
+
+	if err == nil {
+	//if GoVersionGreaterThan("1.10") {
 
 		if outText != "" {
 			ret = make (map[string]string)
@@ -257,8 +256,9 @@ func ModulePaths() (ret map[string]string, err error) {
 		}
 		return
 	} else {
-		// We don't have module support
+		// We don't have module support, so everything flows from top level locations
 		if outText, err = ExecuteShellCommand("go list -find -json all"); err != nil {
+			log.Fatal(outText, err)	// having a problem just running go list
 			return
 		}
 
@@ -273,33 +273,20 @@ func ModulePaths() (ret map[string]string, err error) {
 					var v pathType10
 					err = json.Unmarshal([]byte(out), &v)
 					if err != nil {
+						log.Fatal(out)
 						return
 					}
-					if len(root) <= len(v.Dir) && v.Dir[:len(root)] != root {
-						ret[v.ImportPath] = v.Dir
+					if len(root) <= len(v.Dir) && v.Dir[:len(root)] != root { // exclude built-in packages
+						// truncate the path up to the top level. We have to try to preserve the same format we were given.
+						pathItems := strings.Split(v.ImportPath, "/")
+						p := path.Join(pathItems[1:]...)
+						dir := v.Dir[:len(v.Dir) - len(p) - 1]
+						ret[pathItems[0]] = dir
 					}
 				}
 			}
 		}
 		return
 	}
-}
-
-// Returns true if the Go version is greater than that given. It will check how ever deep you ask.
-// So 1.10.3 is not greater than 1.10, but it is greater than 1.10.1.
-func GoVersionGreaterThan(ver string) bool {
-	realVers := strings.Split(runtime.Version(), ".")
-	realVers[0] = realVers[0][2:]
-
-	vers := strings.Split(ver, ".")
-
-	for i,n := range vers {
-		v,_ := strconv.Atoi(n)
-		v2, _ := strconv.Atoi(realVers[i])
-		if v < v2 {
-			return true
-		}
-	}
-	return false
 }
 
