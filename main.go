@@ -169,7 +169,10 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 	ioutil.WriteFile(file, []byte(s), os.ModePerm)
 
 	if runImports {
-		ExecuteShellCommand("goimports -w " + file)
+		_,err := ExecuteShellCommand("goimports -w " + file)
+		if err != nil {
+			panic(err)	// perhaps goimports is not installed?
+		}
 	} else {
 		ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
 	}
