@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -11,8 +13,9 @@ import (
 )
 
 // ExecuteShellCommand executes a shell command in the current working directory and returns its output, if any.
-// The result is the combination of stdOut and stdErr
-func ExecuteShellCommand(command string) (result string, err error) {
+// The result is stdOut. If you get an error, you can cast err to (*exec.ExitError) and read the stdErr member to see
+// the error message that was generated.
+func ExecuteShellCommand(command string) (result []byte, err error) {
 	parts := strings.Split(command, " ")
 	if len(parts) == 0 {
 		return
@@ -20,9 +23,7 @@ func ExecuteShellCommand(command string) (result string, err error) {
 
 	cmd := exec.Command(parts[0], parts[1:]...)
 
-	var out []byte
-	out, err = cmd.CombinedOutput()
-	result = string(out)
+	result, err = cmd.Output()
 	return
 }
 
@@ -44,26 +45,23 @@ type pathType10 struct {
 // If we are building without module support, it will return only the top paths to packages, since everything in this
 // situation will be relative to GOPATH.
 func ModulePaths() (ret map[string]string, err error) {
-	var outText string
+	var outText []byte
 
 	outText, err = ExecuteShellCommand("go list -m -json all")
 
 	if err == nil {
-		if outText != "" {
+		if outText != nil && len(outText) > 0 {
 			ret = make (map[string]string)
-			// outText is not exactly json. We have to kind of tokenize it
-			outText = strings.Replace(outText, "\n}\n{", "\n}****{", -1)	// might not work on windows?
-			outs := strings.Split(outText, "****")
-			for _, out := range outs {
-				out = strings.TrimSpace(out)
-				if out != "" && out[0:1] == "{" {
-					var v pathType11
-					err = json.Unmarshal([]byte(out), &v)
-					if err != nil {
-						return nil,fmt.Errorf("Error unpacking json from go list command.\n%s\n%s", out, err.Error())
+			dec := json.NewDecoder(bytes.NewReader(outText))
+			for {
+				var v pathType11
+				if err := dec.Decode(&v); err != nil {
+					if err == io.EOF {
+						break
 					}
-					ret[v.Path] = v.Dir
+					return nil,fmt.Errorf("Error unpacking json from go list command.\n%s\n%s", string(outText), err.Error())
 				}
+				ret[v.Path] = v.Dir
 			}
 		}
 		return
@@ -74,26 +72,23 @@ func ModulePaths() (ret map[string]string, err error) {
 		}
 
 		root := runtime.GOROOT()	// we are going to remove built in packages
-		if outText != "" {
+		if outText != nil && len(outText) > 0 {
 			ret = make (map[string]string)
-			// outText is not exactly json. We have to kind of tokenize it
-			outText = strings.Replace(outText, "\n}\n{", "\n}****{", -1)	// might not work on windows?
-			outs := strings.Split(outText, "****")
-			for _, out := range outs {
-				out = strings.TrimSpace(out)
-				if out != "" && out[0:1] == "{" {
-					var v pathType10
-					err = json.Unmarshal([]byte(out), &v)
-					if err != nil {
-						return nil,fmt.Errorf("Error unpacking json from go list command.\n%s\n%s", out, err.Error())
+			dec := json.NewDecoder(bytes.NewReader(outText))
+			for {
+				var v pathType10
+				if err := dec.Decode(&v); err != nil {
+					if err == io.EOF {
+						break
 					}
-					if len(root) <= len(v.Dir) && v.Dir[:len(root)] != root { // exclude built-in packages
-						// truncate the path up to the top level. We have to try to preserve the same format we were given.
-						pathItems := strings.Split(v.ImportPath, "/")
-						p := path.Join(pathItems[1:]...)
-						dir := v.Dir[:len(v.Dir) - len(p) - 1]
-						ret[pathItems[0]] = dir
-					}
+					return nil,fmt.Errorf("Error unpacking json from go list command.\n%s\n%s", string(outText), err.Error())
+				}
+				if len(root) <= len(v.Dir) && v.Dir[:len(root)] != root { // exclude built-in packages
+					// truncate the path up to the top level. We have to try to preserve the same format we were given.
+					pathItems := strings.Split(v.ImportPath, "/")
+					p := path.Join(pathItems[1:]...)
+					dir := v.Dir[:len(v.Dir) - len(p) - 1]
+					ret[pathItems[0]] = dir
 				}
 			}
 		}
