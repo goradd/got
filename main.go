@@ -171,7 +171,7 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 	if runImports {
 		_,err := ExecuteShellCommand("goimports -w " + file)
 		if err != nil {
-			panic(err)	// perhaps goimports is not installed?
+			panic("error running goimports: " + err.Error())	// perhaps goimports is not installed?
 		}
 	} else {
 		ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it

@@ -67,7 +67,7 @@ func ModulePaths() (ret map[string]string, err error) {
 		return
 	} else {
 		// We don't have module support, so everything flows from top level locations
-		if outText, err = ExecuteShellCommand("go list -find -json all"); err != nil {
+		if outText, err = ExecuteShellCommand("go list -e -find -json all"); err != nil {
 			return nil,fmt.Errorf("Error executing shell command %s, %s", outText, err.Error())
 		}
 
