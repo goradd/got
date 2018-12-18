@@ -6,3 +6,6 @@ go:
 script:
   - env GO111MODULE=on go install
   - env GO111MODULE=on go test
+
+before_install:
+  - export PATH="$PATH:$HOME/gopath/bin"
