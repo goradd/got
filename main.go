@@ -24,7 +24,7 @@ func main() {
 	flag.StringVar(&outDir, "o", "", "Output directory")
 	flag.StringVar(&typ, "t", "", "Will process all files with this suffix in current directory, or the directory given by the -d directive.")
 	flag.BoolVar(&runImports, "i", false, "Run goimports on the file to automatically add your imports to the file. You will need to install goimports to do this.")
-	flag.StringVar(&includes, "I", "", "The list of directories to look in to find template include files. Separate with semicolons.")
+	flag.StringVar(&includes, "I", "", "The list of directories to look in to find template include files.")
 	flag.StringVar(&inputDirectory, "d", "", "The directory to search for files if using the -t directive. Otherwise the current directory will be searched.")
 	if args == "" {
 		flag.Parse() // regular run of program

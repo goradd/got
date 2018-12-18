@@ -1,12 +1,14 @@
 # GoT
 
-GoT (short for go templates) is a template engine that generates fast go templates. It is similar to some other 
-template engines, like hero, in that it generates go code that can get compiled into your program,
-or a go plugin. This approach creates extremely fast templates, especially as
+GoT (short for go templates) is a template engine that generates fast go templates. 
+
+It is similar to some other 
+template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that can get compiled 
+into your program or a go plugin. This approach creates extremely fast templates, especially as
 compared to go's standard template engine. It also gives you much more freedom than Go's template
 engine, since at any time you can just switch to go code to do what you want.
 
-GoT's primary function is to support the goradd web framework, and that drives our
+GoT's primary function is to support the developing goradd web framework, and that drives my
 design decisions. However, it is a standalone template engine that you may find useful. 
 
 - [Features](#features)
@@ -24,7 +26,7 @@ machine code.
 - **Easy to use**. The templates themselves are embedded into your go code. The template language is pretty 
 simple and you can do a lot with only a few tags. You can switch into and out of go code at will. Tags are 
 Mustache-like, so somewhat go idiomatic.
-- **Flexible**. The template language makes very few assumptions about the go environment it is in. Most
+- **Flexible**. The template language makes very few assumptions about the go environment it is in. Most other
 template engines require you to call the template with a specific function signature. **GoT** gives you the
 freedom to call your templates how you want.
 - **Translation Support**. You can specify that you want to send your strings to a translator before 
@@ -46,14 +48,14 @@ use buffer pools to increase performance, write to io.Writers, and more. Since t
 templates become go code, you can do what you imagine.
 
 
-## Install
+## Installation
 
 ```shell
 go get github.com/spekary/got/got
 
-# GoT will format the resulting code using `go fmt`, but we recommend installing `goimports` 
+# GoT will format any resulting go code using `go fmt`, but we recommend installing `goimports` 
 # and passing it the -i flag on the command line to use goimports instead, since that will add the
-# additional service of fixing up the imports line.
+# additional service of fixing up the import lines of any generated go files.
 
 go get golang.org/x/tools/cmd/goimports
 ```
@@ -85,12 +87,12 @@ examples:
 ```
 
 ## Basic Syntax
-Template tags start with {{ and end with }}.
+Template tags start with `{{` and end with `}}`.
 
-A template starts in go mode. To send simple text or html to output, surround the text with {{ and }} tags
+A template starts in go mode. To send simple text or html to output, surround the text with `{{` and `}}` tags
 with a space or newline separating the tags from the surrounding text. Inside the brackets you will be in 
 text mode.
-From within text mode, you can send out a go value by surrounding the go code with {{ and }} tags without spaces
+From within text mode, you can send out a go value by surrounding the go code with `{{` and `}}` tags without spaces
 separating the go code from the brackets.
 
 Text will get written to output by calling `buf.WriteString`. Got makes no assumptions
@@ -106,7 +108,7 @@ additional items to your import list. Those are mentioned below with each tag.
 ### Example
 Here is how you might create a very basic template. For purposes of this example, we will call the file
 `example.got` and put it in the `template` package, but you can name the file and package whatever you want.
-```go
+```
 package template
 
 import "bytes"
@@ -134,7 +136,7 @@ package main
 import (
 	"bytes"
 	"os"
-	"template"
+	"mypath/template"
 )
 
 func main() {
@@ -154,24 +156,22 @@ Many tags have a short and a long form. Using the long form does not impact perf
 to help your templates have some human readable context to them if you want that.
 
 ### Static Text
-The following tags will send the surrounded text to `buf.WriteString`:
-- `{{` With a space or newline after it will begin to output text as written.
-- `{{!` or `{{esc` html escapes the text. Html reserved characters, like < or > are turned into html entities first. 
-This happens when the template is compiled, so that when the template runs, the string will already be escaped. 
-This requires you to import the "html" package (or run go imports on the file).
-- `{{h` or `{{html` Converts the text to html by escaping reserved characters, surrounding double returns
-with ```<p>``` paragraph tags, and ending single returns with ```<br>``` break tags, so that the text will
-appear as written when sent to a browser. Requires the "html" and "strings" packages.
-- `{{t` or `{{translate` Strings will be sent to a translator by wrapping the string in a call to
-`t.Translate()`. Its up to you to define this object and make it available to the template. The
+    {{<space or newline>   Begin to output text as written.
+    {{! or {{esc           Html escape the text. Html reserved characters, like < or > are turned into html entities first.
+                           This happens when the template is compiled, so that when the template runs, the string will already be escaped. 
+    {{h or {{html          Html escape and html format breaks and newlines
+    {{t or {{translate     Send the text to a translator
+
+
+The `{{!` tag requires you to import the standard html package. `{{h` requires both the html and strings packages.
+
+`{{t` will wrap the static text with a call to t.Translate(). Its up to you to define this object and make it available to the template. The
 translation will happen during runtime of your program. We hope that a future implementation of GoT could
 have an option to send these strings to an i18n file to make it easy to send these to a translation service.
 
-From within any static text context described above you can switch into go context by using the
-`{{g` or `{{go` tag.
-
-#### Example 
-```go
+#### Example
+In this example file, not that we start in Go mode, copying the text verbatim to the template file.
+```
 package test
 
 import (
@@ -184,8 +184,6 @@ type Translater interface {
 }
 
 func staticTest(buf *bytes.Buffer) {
-{{ Here {{go buf.WriteString("is") }} some code wrapping text escaping to go. }}
-
 {{
 <p>
 {{! Escaped html < }}
@@ -209,38 +207,61 @@ func translateTest(t Translater, buf *bytes.Buffer) {
 }
 ```
 
+### Switching Between Go Mode and Template Mode
+From within any static text context described above you can switch into go context by using:
+
+    {{g or {{go     Change to straight go code.
+    
+Go code is copied verbatim to the final template. Use it to set up loops, call special processing function, etc.
+End go mode using the `}}` closing tag. You can also include any other GoT tag inside of Go mode,
+meaning you can next Go mode and all the other template tags.
+
+#### Example
+```
+// We start a template in Go mode. The next tag switches to text mode, and then nests
+// switching back to go mode.
+{{ Here 
+{{go 
+buf.WriteString("is") 
+}} some code wrapping text escaping to go. }}
+
+
+```
+
 
 ### Dynamic Text
 The following tags are designed to surround go code that returns a go value. The value will be 
-converted to a string and sent to the output. The go code could be a static value, or a function
+converted to a string and sent to the buf. The go code could be a static value, or a function
 that returns a value.
 
-- `{{=`, `{{s`, or  `{{string` Send a go string to output. 
-  - Example: `{{= fmt.Sprintf("I am %s", sVar) }}`
-- `{{i` or `{{int` Integer. Example: `{{ The value is: {{i iVar }} }}`
-- `{{u` or `{{uint` Unsigned Integer
-- `{{f` or `{{float` Floating point number
-- `{{b` or `{{bool` Boolean value (will output "true" or "false")
-- `{{w` or `{{bytes` Byte slice
-- `{{v` or `{{stringer` or `{{`*goIdentifier*`}}` Send any value that implements the Stringer interface.
-	This can be slower than
-   the other tags since it uses fmt.Sprintf internally, so if this is a heavily used template, 
-   avoid it. Usually you will not notice a speed difference though. and the third option
-   can be very convenient. Note that this third option is simply any go variable surrounded by mustaches with no spaces.
+    Tag                       Description                                Example
+    
+    {{=, {{s, or  {{string    Send a go string to output                 {{= fmt.Sprintf("I am %s", sVar) }}
+    {{i or {{int              Send an int to output                      {{ The value is: {{i iVar }} }}
+    {{u or {{uint             Send an unsigned Integer                   {{ The value is: {{u uVar }} }}
+    {{f or {{float            Send a floating point number               {{ The value is: {{f fVar }} }}
+    {{b or {{bool             A boolean (will output "true" or "false")  {{ The value is: {{b bVar }} }}
+    {{w or {{bytes            A byte slice                               {{ The value is: {{w byteSliceVar }} }}
+    {{v or {{stringer or      Send any value that implements             {{ The value is: {{objVar}} }}
+       {{goIdentifier}}       the Stringer interface.
 
 
+This last tag can be slower than the other tags since it uses fmt.Sprintf("%v") internally, 
+so if this is a heavily used template,  avoid it. Usually you will not notice a speed difference though,
+and the third option can be very convenient. This third option is simply any go variable surrounded by mustaches 
+with no spaces.
 
 #### Escaping Dynamic Text
 
-Some value types potentially could produce html reserved characters. These tags will html escape
+Some value types potentially could produce html reserved characters. The following tags will html escape
 the output.
 
-- `{{!=`,`{{!s` or `{{!string` Escape a go string and send to output. Requires the "html" package.
-  - Example: `{{!= getUserInput() }}`
-- `{{!w` or `{{!bytes` Byte slice
-- `{{!v` or `{{!stringer` Any value that implements the Stringer interface. 
-- `{{!h` Escape a go string and convert newlines to html break tags to essentially show the html as code in the browser.
-Requires the "html" and "strings" packages.
+    {{!=, {{!s or {{!string    HTML escape a go string
+    {{!w or {{!bytes           HTML escape a byte slice
+    {{!v or {{!stringer        HTML escape a Stringer
+    {{!h                       Escape a go string and and html format breaks and newlines
+
+These tags require you to import the "html" package. The `{{!h` tag also requires the "strings" package.
 
 #### Capturing Errors
 
@@ -249,22 +270,25 @@ type. If the error is not nil, processing will stop and the error will be return
 tags expect to be included in a function that returns an error. Any template text
 processed so far will still be sent to the output buffer.
 
-- `{{=e`, `{{se`, `{{string,err`, `{{!=e`, `{{!se`, `{{!string,err` Send a go string to output. The last 3 will html escape too.
-- `{{ie` or `{{int,err` Integer
-- `{{ue` or `{{uint,err` Unsigned Integer
-- `{{fe` or `{{float,err` Floating point number
-- `{{be` or `{{bool,err` Boolean value (will output "true" or "false")
-- `{{we`, `{{bytes,err`, `{{!we` or `{{!bytes,err` Byte slice
-- `{{ve`, `{{stringer,err`, `{{!ve` or `{{!stringer,err` Write any value that implements the Stringer interface
-- `{{e`, or `{{err` Execute go code that returns an error, and stop if the error is not nil
+    {{=e, {{se, {{string,err      Output a go string, capturing an error
+    {{!=e, {{!se, {{!string,err   HTML escape a go string and capture an error
+    {{ie or {{int,err             Output a go int and capture an error
+    {{ue or {{uint,err            Output a go uint and capture an error
+    {{fe or {{float,err           Output a go float64 and capture an error
+    {{be or {{bool,err            Output a bool ("true" or "false") and capture an error
+    {{we, {{bytes,err             Output a byte slice and capture an error
+    {{!we or {{!bytes,err         HTML escape a byte slice and capture an error
+    {{ve, {{stringer,err          Output a Stringer and capture an error
+    {{!ve or {{!stringer,err      HTML escape a Stringer and capture an error
+    {{e, or {{err                 Execute go code that returns an error, and stop if the error is not nil
 
 ##### Example
 ```go
-func Tester(s string) (s string, err error) {
+func Tester(s string) (out string, err error) {
 	if s == "bad" {
 		err = errors.New("This is bad.")
 	}
-	return
+	return s
 }
 
 func OutTemplate(toPrint string, buf bytes.Buffer) error {
@@ -273,10 +297,12 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 ```
 
 ### Include Files
-`{{: "fileName" }}` or `{{include "fileName" }}` Inserts the given file name into the template. 
+
+    {{: "fileName" }} or {{include "fileName" }}   Inserts the given file name into the template.
+
  The included file will start in whatever mode the receiving template is in, as if the text was inserted
- at that spot, so if the include tags are
- put inside of go code, the included file will start in go mode. The file will then be processed like any other got file.
+ at that spot, so if the include tags are  put inside of go code, the included file will start in go mode. 
+ The file will then be processed like any other got file.
  
  Include files are searched for in the current directory, and in the list of include directories provided
  on the command line by the -I option.
@@ -284,21 +310,28 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 Example: `{{: "myTemplate.inc" }}`
  
 ### Defined Fragments
+
 Defined fragments start a block of text that can be included later in a template. The included text will
 be sent as is, and then processed in whatever mode the template processor is in, as if that text was simply
-inserted into the template at that spot. You can include the {{ or {{g tags inside of the fragment to
+inserted into the template at that spot. You can include the `{{` or `{{g` tags inside of the fragment to
 force the processor into the text or go modes if needed. The fragment can be defined
 any time before it is included, including being defined in other include files. You can add optional parameters
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
-- `{{< fragName }}` or `{{define fragName }}`Start a block called "fragName". The name is NOT surrounded by quotes, and cannot
-contain any whitespace in the name. Blocks are ended with a `{{end}}` tag. The end tag must be just like
-that, with no spaces inside the tag.
-- `{{> fragName param1,param2,...}}` or `{{put fragName param1,param2,...}}` or just `{{fragName param1,param2,...}}`  Substitute this tag for the given defined fragment. If a defined
-fragment is not defined with the given name, got will panic and stop compiling. param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
+
+    {{< fragName }} or {{define fragName }}          Start a block called "fragName".
+    {{> fragName param1,param2,...}} or              Substitute this tag for the given defined fragment.
+      {{put fragName param1,param2,...}} or just
+      {{fragName param1,param2,...}}
  
+If a defined fragment is not defined with the given name, got will panic and stop compiling.
+param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
+
+The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
+`{{end}}` tag. The end tag must be just like that, with no spaces inside the tag.
+
 #### Example
-```go
+```
 
 {{< hFrag }}
 <p>
@@ -329,25 +362,52 @@ func OutTemplate(buf bytes.Buffer) {
 }
 ```
 
-### Other Tags
+### Comment Tags
 
-- `{{g` or `{{go` switch into go mode from within a static text mode.
-- `{{#` or `{{//` Comment the template. This is removed from the compiled template.
-- `{{- }}` or `{{backup }}` Backs up one or more characters. If you follow the tag with a number, 
-that many characters will be removed. This is useful to remove extraneous newlines. 
-For example, `{{- 4}}` will back up 4 characters. Also, if you end a line with this tag, it will
-join the line with the next line.
-- `{{if `*code*`}}` This is a convenience tag for surrounding text with a go "if" statement. To close the 
-  if, use `{{if}}`. You can put a `{{else}}` in between to have an if/else. These kinds of if/else statements
-  are easier to read than putting them inside of `{{g` tags.
-  Example: ```{{if plural }}We are{{else}}I am{{if}} awesome.```
-- `{{for `*code*`}}` Similar to the if tag, this starts a "for" block. End it with ```{{for}}```. Treat it the same
-  as any go `for`, meaning it can do standard iteration or be used in a range.
-  Example: ```{{for num,item := range items }}<p>Item {{num}} is {{item}}</p>{{for}}```
-- `{{begin *endTag*}}` Starts a strict text block and turns off the got parser. This is useful for situations where you may
-   be generating text that contains things that look like got tags, or perhaps you are using got to generate got.
-   End the block with a `{{*endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. The following
-   example will output the entire second line of code with no changes, including all brackets:
+    {{# or {{//                           Comment the template. This is removed from the compiled template.
+
+These tags and anything enclosed in them is removed from the compiled template.
+
+### Backup Tags
+
+    {{- }} or {{backup }}                 Backs up one character.
+    {{- <count>}} or {{backup <count>}}   Back up <count> characters.
+
+Sometimes you find that you need to remove text that has already been sent to a template. Include
+one of the above backup tags to do that.
+
+For example, `{{- 4}}` will back up 4 characters. Also, if you end a line with this tag, it will join the line with the 
+next line.  
+
+### Go Block Tags
+    
+    {{if <go condition>}}<block>{{if}}    This is a convenience tag for surrounding text with a go "if" statement.
+    {{for <go condition>}}<block>{{for}}  This is a convenience tag for surrounding text with a go "for" statement.
+
+These tags are substitutes for switching into GO mode and using a `for` or `if` statement. 
+
+####Example
+
+```
+{{
+{{for num,item := range items }}
+<p>Item {{num}} is {{item}}</p>
+{{for}}
+}}
+```
+
+### Strict Text Block Tag
+
+From within most of the GoT tags, you can insert another GoT tag. GoT will be looking for these
+as it processes text. If you would like to turn off GoT's processing to output text that looks just like a GoT tag,
+you can use:
+
+    {{begin *endTag*}} Starts a strict text block and turns off the got parser. 
+    
+One thing this is useful for is to use Got to generate Got code.
+End the block with a `{{*endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. The following
+example will output the entire second line of code with no changes, including all brackets:
+
 ```
 {{begin mystrict}}
 {{! This is verbatim code }}{{< not included}}
@@ -379,15 +439,13 @@ Finally, there is an example main.go illustrating how our template function woul
 
 ### template.got
 
-
-```go
+```
 package main
 
 import {
 	"context"
 	"bytes"
 }
-
 
 
 func writeTemplate(ctx context.Context, buf *bytes.Buffer) {
@@ -445,3 +503,12 @@ Build your application and go to `http://localhost:8000` in your browser, to see
 ## License
 
 Got is licensed under the MIT License.
+
+
+## Acknowldgements
+
+GoT was influenced by:
+
+- [hero](https://github.com/shiyanhui/hero)
+- [fasttemplate](https://github.com/valyala/fasttemplate)
+- [Rob Pike's Lexing/Parsing Talk](https://www.youtube.com/watch?v=HxaD_trXwRE)
