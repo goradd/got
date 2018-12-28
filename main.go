@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/goradd/gofile/pkg/sys"
 	"github.com/spekary/got/got"
+
 	"io/ioutil"
 	"log"
 	"os"
@@ -35,7 +37,7 @@ func main() {
 	files := flag.Args()
 
 	var err error
-	if modules,err = ModulePaths(); err != nil {
+	if modules,err = sys.ModulePaths(); err != nil {
 		panic(err)
 	}
 
@@ -104,7 +106,7 @@ func main() {
 }
 
 func getRealPath(path string) string {
-	newPath, err := GetModulePath(path, modules)
+	newPath, err := sys.GetModulePath(path, modules)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -169,12 +171,12 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 	ioutil.WriteFile(file, []byte(s), os.ModePerm)
 
 	if runImports {
-		_,err := ExecuteShellCommand("goimports -w " + file)
+		_,err := sys.ExecuteShellCommand("goimports -w " + file)
 		if err != nil {
 			panic("error running goimports: " + err.Error())	// perhaps goimports is not installed?
 		}
 	} else {
-		ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
+		sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
 	}
 }
 
