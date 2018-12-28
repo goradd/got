@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/goradd/gofile/pkg/sys"
-	"github.com/spekary/got/got"
+	"github.com/goradd/got/got"
 
 	"io/ioutil"
 	"log"

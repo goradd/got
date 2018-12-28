@@ -12,6 +12,6 @@
 //
 // You can do a lot with just a few tags, so you don't need to learn a lot to use GoT. Get started in minutes.
 //
-// For complete usage documentation, see https://github.com/spekary/got
+// For complete usage documentation, see https://github.com/goradd/got
 //
 package main

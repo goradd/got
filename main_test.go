@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/goradd/gofile/pkg/sys"
 	"testing"
 	"path/filepath"
 	"os"
@@ -15,15 +16,15 @@ import (
 func TestGot(t *testing.T) {
 	// args is a global in the main package just for testing
 
-	args = "-t got -i -o github.com/spekary/got/test/template -I github.com/spekary/got/test/src/inc -d github.com/spekary/got/test/src"
+	args = "-t got -i -o github.com/goradd/got/test/template -I github.com/goradd/got/test/src/inc -d github.com/goradd/got/test/src"
 
 	main()
 
-	testPath := filepath.Join(`github.com/spekary/got/test`)
+	testPath := filepath.Join(`github.com/goradd/got/test`)
 	runnerPath := filepath.Join(testPath, "runner", "runner.go")
 	comparePath := filepath.Join(testPath, "compare")
 	expectedPath := filepath.Join(testPath, "expected")
-	ExecuteShellCommand("go run " + runnerPath + " " + comparePath)
+	sys.ExecuteShellCommand("go run " + runnerPath + " " + comparePath)
 
 	// compare the outputs and report differences
 

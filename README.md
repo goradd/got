@@ -51,7 +51,7 @@ templates become go code, you can do what you imagine.
 ## Installation
 
 ```shell
-go get github.com/spekary/got/got
+go get github.com/goradd/got/got
 
 # GoT will format any resulting go code using `go fmt`, but we recommend installing `goimports` 
 # and passing it the -i flag on the command line to use goimports instead, since that will add the

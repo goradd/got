@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"bytes"
-	"github.com/spekary/got/test/template"
+	"github.com/goradd/got/test/template"
 )
 
 func main() {
