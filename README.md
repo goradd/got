@@ -51,13 +51,14 @@ templates become go code, you can do what you imagine.
 ## Installation
 
 ```shell
-go get github.com/goradd/got/got
+go get -u github.com/goradd/got/...
+```
 
-# GoT will format any resulting go code using `go fmt`, but we recommend installing `goimports` 
-# and passing it the -i flag on the command line to use goimports instead, since that will add the
-# additional service of fixing up the import lines of any generated go files.
-
-go get golang.org/x/tools/cmd/goimports
+GoT will format any resulting go code using `go fmt`, but we recommend installing `goimports` 
+and passing it the -i flag on the command line to use goimports instead, since that will add the
+additional service of fixing up the import lines of any generated go files.
+```shell
+go get -u golang.org/x/tools/cmd/goimports
 ```
 
 ## Usage
