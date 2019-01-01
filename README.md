@@ -51,7 +51,7 @@ templates become go code, you can do what you imagine.
 ## Installation
 
 ```shell
-go get -u github.com/goradd/got/...
+go get -u github.com/goradd/got/got
 ```
 
 GoT will format any resulting go code using `go fmt`, but we recommend installing `goimports` 
