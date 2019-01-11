@@ -331,7 +331,7 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 	}
 
 	if _, ok := tokens["{{"+name]; ok {
-		return l.errorf("Block name cannot be a tag name. Block name: %s")
+		return l.errorf("Block name cannot be a tag name. Block name: %s", name)
 	}
 
 	offset := strings.Index(l.input[l.start:], tokEndBlock)
