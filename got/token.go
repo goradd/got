@@ -141,8 +141,11 @@ func init() {
 	tokens["{{t"] = item{typ: itemText, escaped: false, translate: true}
 	tokens["{{translate"] = item{typ: itemText, escaped: false, translate: true}
 
-	tokens["{{:"] = item{typ: itemInclude}       // must follow with a quoted file name
-	tokens["{{include"] = item{typ: itemInclude} // must follow with a quoted file name
+	tokens["{{:"] = item{typ: itemInclude}       // must follow with a file name
+	tokens["{{include"] = item{typ: itemInclude} // must follow with a file name
+	tokens["{{:h"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true}       // must follow with a file name
+	tokens["{{includeEscaped"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true} // must follow with a file name
+
 
 	tokens["{{-"] = item{typ: itemBackup}      // Can be followed by a number to indicate how many chars to backup
 	tokens["{{backup"] = item{typ: itemBackup} // Can be followed by a number to indicate how many chars to backup

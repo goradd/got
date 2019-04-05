@@ -298,17 +298,24 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 ```
 
 ### Include Files
+#### Include a got source file
 
     {{: "fileName" }} or {{include "fileName" }}   Inserts the given file name into the template.
 
  The included file will start in whatever mode the receiving template is in, as if the text was inserted
  at that spot, so if the include tags are  put inside of go code, the included file will start in go mode. 
- The file will then be processed like any other got file.
+ The file will then be processed like any other got file. Include files can refer to other include files,
+ and so are recursive.
  
  Include files are searched for in the current directory, and in the list of include directories provided
  on the command line by the -I option.
 
 Example: `{{: "myTemplate.inc" }}`
+
+#### Include a text file
+    {{:h "fileName" }} or {{includeEscaped "fileName" }}   Inserts the given file name into the template and html escapes it.
+
+Use this to include a text file that you want to reproduce in html.
  
 ### Defined Fragments
 
