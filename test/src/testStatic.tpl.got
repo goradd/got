@@ -20,6 +20,11 @@ Testing quotes: "'`
 	that is both escaped and has
 	html paragraphs and breaks inserted.
 }}
+
+{{
+This should be testStatic.tpl.got: {{templateName}}
+}}
+
 {{end}}
 
 

@@ -7,3 +7,5 @@ Escaped html &lt;
 	that is both escaped and has<br>
 	html paragraphs and breaks inserted.<br>
 </p>
+
+This should be testStatic.tpl.got: testStatic.tpl.got

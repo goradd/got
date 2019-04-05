@@ -87,6 +87,13 @@ func Lex(input string, fileName string) *lexer {
 		fileName: fileName,
 		items:    make(chan item),
 	}
+	// make predefined named blocks
+	path, err := filepath.Abs(fileName)
+	if err == nil {
+		namedBlocks["templatePath"] = path
+		namedBlocks["templateName"] = filepath.Base(path)
+	}
+
 	go l.run()
 	return l
 }
