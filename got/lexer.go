@@ -89,9 +89,16 @@ func Lex(input string, fileName string) *lexer {
 	}
 	// make predefined named blocks
 	path, err := filepath.Abs(fileName)
+	base := filepath.Base(path)
+	root := base
+	if offset := strings.Index(root, "."); offset >= 0 {
+		root = root[0:offset]
+	}
+
 	if err == nil {
 		namedBlocks["templatePath"] = path
-		namedBlocks["templateName"] = filepath.Base(path)
+		namedBlocks["templateName"] = base
+		namedBlocks["templateRoot"] = root
 	}
 
 	go l.run()

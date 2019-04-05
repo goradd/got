@@ -8,4 +8,4 @@ Escaped html &lt;
 	html paragraphs and breaks inserted.<br>
 </p>
 
-This should be testStatic.tpl.got: testStatic.tpl.got
+This should be testStatic: testStatic

@@ -331,8 +331,10 @@ param1, param2, ... are optional parameters that will be substituted for $1, $2,
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
 `{{end}}` tag. The end tag must be just like that, with no spaces inside the tag.
 
-The predefine fragment `{{templatePath}}` will result in the full path of the template file
-it is included in, and `{{templateName}}` will produce the base name of the template file.
+The following fragments are predefined:
+* `{{templatePath}}` will result in the full path of the template file
+* `{{templateName}}` will produce the base name of the template file, including any extensions
+* `{{templateRoot}}` will produce the base name of the template file without any extensions
 
 #### Example
 ```

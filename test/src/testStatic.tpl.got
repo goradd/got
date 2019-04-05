@@ -22,7 +22,7 @@ Testing quotes: "'`
 }}
 
 {{
-This should be testStatic.tpl.got: {{templateName}}
+This should be testStatic: {{templateRoot}}
 }}
 
 {{end}}
