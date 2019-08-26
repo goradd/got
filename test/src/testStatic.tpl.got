@@ -16,9 +16,10 @@ Testing quotes: "'`
 }}
 
 {{h
-	This is text
-	that is both escaped and has
-	html paragraphs and breaks inserted.
+	This is text that
+	is escaped.
+
+	And has html paragraphs inserted.
 }}
 
 {{

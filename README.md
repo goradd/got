@@ -160,7 +160,7 @@ to help your templates have some human readable context to them if you want that
     {{<space or newline>   Begin to output text as written.
     {{! or {{esc           Html escape the text. Html reserved characters, like < or > are turned into html entities first.
                            This happens when the template is compiled, so that when the template runs, the string will already be escaped. 
-    {{h or {{html          Html escape and html format breaks and newlines
+    {{h or {{html          Html escape and html format double-newlines into <p> tags.
     {{t or {{translate     Send the text to a translator
 
 
@@ -171,7 +171,7 @@ translation will happen during runtime of your program. We hope that a future im
 have an option to send these strings to an i18n file to make it easy to send these to a translation service.
 
 #### Example
-In this example file, not that we start in Go mode, copying the text verbatim to the template file.
+In this example file, note that we start in Go mode, copying the text verbatim to the template file.
 ```
 package test
 
@@ -192,9 +192,9 @@ func staticTest(buf *bytes.Buffer) {
 }}
 
 {{h
-	This is text
-	that is both escaped and has
-	html paragraphs and breaks inserted.
+	This is text that is both escaped.
+	 
+	And has html paragraphs inserted.
 }}
 
 }

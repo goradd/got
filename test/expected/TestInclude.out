@@ -4,9 +4,9 @@ The end.
 	Escaped html &lt;
 	</p>
 
-<p>This is text<br>
-that is both escaped and has<br>
-html paragraphs and breaks inserted.<br>
+<p>This is text
+that is both escaped and has
+html paragraphs and breaks inserted.
 </p>
 
 

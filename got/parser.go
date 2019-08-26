@@ -151,8 +151,6 @@ func outputHtml(item item, val string) string {
 	val = html.EscapeString(val)
 	val = strings.Replace(val, "\n\n", "</p>\n<p>", -1)
 	val = strings.Replace(val, "\r\r", "</p>\n<p>", -1)
-	val = strings.Replace(val, "\n", "<br>\n", -1)
-	val = strings.Replace(val, "\r", "<br>\n", -1)
 
 	val = "<p>" + val + "</p>\n"
 
