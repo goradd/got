@@ -81,6 +81,11 @@ func main() {
 		got.IncludePaths = append(got.IncludePaths, inputDirectory)
 	}
 
+	if outDir == "" {
+		if outDir,err = os.Getwd(); err != nil {
+			panic ("Could not use the current directory as the output directory.")
+		}
+	}
 	outDir = getRealPath(outDir)
 
 	dstInfo, err := os.Stat(outDir)
@@ -169,7 +174,10 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 
 	file = filepath.Join(dir,file)
 
-	ioutil.WriteFile(file, []byte(s), os.ModePerm)
+	err := ioutil.WriteFile(file, []byte(s), os.ModePerm)
+	if err != nil {
+		panic("Could not write file " + file + ": " + err.Error())
+	}
 
 	if runImports {
 		curDir,_ := os.Getwd()
