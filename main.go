@@ -172,7 +172,10 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 	ioutil.WriteFile(file, []byte(s), os.ModePerm)
 
 	if runImports {
-		_,err := sys.ExecuteShellCommand("goimports -w " + file)
+		curDir,_ := os.Getwd()
+		_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
+		_,err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
+		_ = os.Chdir(curDir)
 		if err != nil {
 			if _,ok := err.(*exec.ExitError); ok {
 				panic("error running goimports on file " + file + ": " + string(err.(*exec.ExitError).Stderr))	// perhaps goimports is not installed?
