@@ -103,11 +103,18 @@ func main() {
 		files, _ = filepath.Glob(inputDirectory + "*." + typ)
 	}
 
+	var files2 []string
 	for _, file := range files {
 		s := processFile(file)
 		if s != "" {
-			writeFile(s, file, outDir, runImports)
+			f := writeFile(s, file, outDir)
+			files2 = append(files2, f)
 		}
+	}
+
+	// Since go typically does io asynchronously, we run our second stage after some pause to let the writes finish
+	for _, file := range files2 {
+		postProcess(file, runImports)
 	}
 }
 
@@ -154,7 +161,7 @@ func processFile(file string) string {
 	return s
 }
 
-func writeFile(s string, file string, outDir string, runImports bool) {
+func writeFile(s string, file string, outDir string) string {
 
 	dir := filepath.Dir(file)
 	dir, _ = filepath.Abs(dir)
@@ -172,18 +179,21 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 		dir = outDir
 	}
 
-	file = filepath.Join(dir,file)
+	file = filepath.Join(dir, file)
 
 	err := ioutil.WriteFile(file, []byte(s), os.ModePerm)
 	if err != nil {
 		panic("Could not write file " + file + ": " + err.Error())
 	}
+	return file
+}
 
+func postProcess(file string, runImports bool) {
+	curDir,_ := os.Getwd()
+	dir := filepath.Dir(file)
+	_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
 	if runImports {
-		curDir,_ := os.Getwd()
-		_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
 		_,err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
-		_ = os.Chdir(curDir)
 		if err != nil {
 			if _,ok := err.(*exec.ExitError); ok {
 				panic("error running goimports on file " + file + ": " + string(err.(*exec.ExitError).Stderr))	// perhaps goimports is not installed?
@@ -192,8 +202,17 @@ func writeFile(s string, file string, outDir string, runImports bool) {
 			}
 		}
 	} else {
-		sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
+		_,err :=  sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
+		if err != nil {
+			if _,ok := err.(*exec.ExitError); ok {
+				panic("error running fmt on file " + file + ": " + string(err.(*exec.ExitError).Stderr))
+			} else {
+				panic(err)
+			}
+		}
+
 	}
+	_ = os.Chdir(curDir)
 }
 
 //Process a string that is a got template, and return the go code
