@@ -394,8 +394,10 @@ next line.
 
 ### Go Block Tags
     
-    {{if <go condition>}}<block>{{if}}    This is a convenience tag for surrounding text with a go "if" statement.
-    {{for <go condition>}}<block>{{for}}  This is a convenience tag for surrounding text with a go "for" statement.
+    {{if <go condition>}}<block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
+    {{if <go condition>}}<block>{{else}}<block>{{if}}                      Go "if" and "else" statement.
+    {{if <go condition>}}<block>{{else if <go condition>}}<block>{{if}}    Go "if" and "else if" statement.
+    {{for <go condition>}}<block>{{for}}                                   This is a convenience tag for surrounding text with a go "for" statement.
 
 These tags are substitutes for switching into GO mode and using a `for` or `if` statement. 
 
