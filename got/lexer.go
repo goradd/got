@@ -617,11 +617,16 @@ func (l *lexer) lexElse(nextState stateFn) stateFn {
 	l.emitType(itemGo)
 	l.ignoreWhiteSpace()
 	l.openCount++
-	if !l.isAtCloseTag() { // TODO: else if
-		return l.errorf("Looking for close tag, found %s", l.input[l.pos:l.pos+2])
+	if l.isAtCloseTag() { // a plain else
+		return l.lexGoExtra(nextState, " } else {\n", "")
+	} else { // an else if?
+		l.ignoreWhiteSpace()
+		l.acceptUntil(" ")
+		if l.currentString() != "if" {
+			return l.errorf("An 'else' can only be followed by an 'if' or nothing, found %s", l.currentString())
+		}
+		return l.lexGoExtra(nextState, " } else ", " { ")
 	}
-
-	return l.lexGoExtra(nextState, " } else {\n", "")
 }
 
 func (l *lexer) lexFor(nextState stateFn) stateFn {

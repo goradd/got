@@ -24,6 +24,17 @@ b := 1
 }}
 {{if}}
 
+{{if a != b }}
+{{
+    Hi there.
+}}
+{{else if a == b}}
+{{
+    Be square.
+}}
+{{if}}
+
+
 {{end}}
 
 
