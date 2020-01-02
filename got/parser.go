@@ -107,7 +107,7 @@ func outputValue(item item, val string) string {
 	case itemUInt:
 		formatter = "strconv.FormatUint(uint64(%s), 10)"
 	case itemInterface:
-		formatter = "fmt.Sprintf(\"%%v\", %s)"
+		formatter = "fmt.Sprint(%s)"
 	case itemFloat:
 		formatter = "strconv.FormatFloat(float64(%s), 'g', -1, 64)"
 	case itemBytes:
