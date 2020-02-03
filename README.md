@@ -249,7 +249,7 @@ that returns a value.
        {{goIdentifier}}       the Stringer interface.
 
 
-This last tag can be slower than the other tags since it uses fmt.Sprintf("%v") internally, 
+This last tag can be slower than the other tags since it uses fmt.Sprint() internally, 
 so if this is a heavily used template,  avoid it. Usually you will not notice a speed difference though,
 and the third option can be very convenient. This third option is simply any go variable surrounded by mustaches 
 with no spaces.
