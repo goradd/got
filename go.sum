@@ -4,6 +4,7 @@ github.com/goradd/gofile v0.1.2 h1:KGAMlp7zR5ARzkNqF9kK/mLPJK+s9xhpG2yFk7UxV+A=
 github.com/goradd/gofile v0.1.2/go.mod h1:Il/+n/haoU0ZJJjwJ6t9f+fFtxrUuEfCG/vEkV1n9is=
 github.com/goradd/gofile v0.1.6 h1:E6rGb3N2Lpp5Zr17FcUnchM0f6kAmvV0glcFJ+KpRSY=
 github.com/goradd/gofile v0.1.6/go.mod h1:FZVfQmXDUNgS7nKPMOsuIxf1VaC1vxYFeP0bmL8fcDU=
+github.com/goradd/gofile v0.1.9/go.mod h1:1Dj3SdiqzATQ7s9QEhprIenY4sjktSAye7YtXDOHaVc=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
