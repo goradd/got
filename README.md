@@ -75,6 +75,8 @@ options:
 		processed.  Directories are searched in the order specified and first matching file will be used. It
 		will always look in the current directory last unless the current directory is specified
 		in the list in another location. Relative paths must start with a dot (.) or double-dot (..).
+        Directories can start with a module name, and based on the current directory, the correct go.mod
+        file will be searched to know where to look for include files.
 	- d directory: When using the -t option, will specify a directory to search.
 
 When running on go 1.11, if a path described above starts with a module path, the actual disk location 

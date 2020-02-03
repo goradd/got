@@ -27,6 +27,8 @@ The end.
 {{# Including an html file in text mode }}
 {{: "testInclude3.html" }}
 }}
+
+
     return
 }
 
