@@ -5,12 +5,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"text/scanner"
 	"time"
 	"unicode/utf8"
-	"text/scanner"
-	"path/filepath"
 )
 
 const eof = -1
@@ -55,6 +56,7 @@ type lexer struct {
 	items     chan item // channel of scanned items
 	hasError  bool
 	openCount int // Make sure open and close tags are matched
+	relativePaths []string // when including files, keeps track of the relative paths to search
 }
 
 type stateFn func(*lexer) stateFn
@@ -257,14 +259,21 @@ func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
 		}
 	}
 
-	log.Println("Opening " + fileName)
+	// Assemble the relative paths collected so far
+	var relPath string
+	for _,path := range l.relativePaths {
+		relPath = filepath.Join(relPath, path)
+	}
 
-	// find the file from the include paths
+	curRelPath := path.Dir(fileName)
+
+	// find the file from the include paths, which allows the include paths to override the immediate path
 	var buf []byte
 	if len(IncludePaths) > 0 {
 		for _, path := range IncludePaths {
-			fileName2 := filepath.Join(path, fileName)
+			fileName2 := filepath.Join(path, relPath, fileName)
 			if buf, err = ioutil.ReadFile(fileName2); err == nil {
+				log.Println("Opened " + fileName2)
 				fileName = fileName2
 				break
 			}
@@ -274,6 +283,7 @@ func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
 		}
 	}
 
+	// If not yet found, the find relative to the include file
 	if buf == nil || len(buf) == 0 {
 		fileName2 := filepath.Join(filepath.Dir(l.fileName), fileName)
 		buf, err = ioutil.ReadFile(fileName2)
@@ -307,11 +317,18 @@ func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
 		return nextState
 	}
 
+	// lex the include file
+
 	l2 := &lexer{
 		input:    s,
 		fileName: fileName,
 		items:    l.items,
+		relativePaths: l.relativePaths,
 	}
+	if curRelPath != "" {
+		l2.relativePaths = append(l2.relativePaths, curRelPath)
+	}
+
 	for state := lexStart; state != nil; {
 		state = state(l2)
 	}

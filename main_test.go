@@ -16,7 +16,7 @@ import (
 func TestGot(t *testing.T) {
 	// args is a global in the main package just for testing
 
-	args = "-t got -i -o github.com/goradd/got/test/template -I github.com/goradd/got/test/src/inc -d github.com/goradd/got/test/src"
+	args = "-t got -i -o github.com/goradd/got/test/template -I github.com/goradd/got/test/src/inc2:github.com/goradd/got/test/src/inc -d github.com/goradd/got/test/src"
 
 	main()
 
