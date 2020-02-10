@@ -195,22 +195,23 @@ func postProcess(file string, runImports bool) {
 	if runImports {
 		_,err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
 		if err != nil {
-			if _,ok := err.(*exec.ExitError); ok {
-				panic("error running goimports on file " + file + ": " + string(err.(*exec.ExitError).Stderr))	// perhaps goimports is not installed?
-			} else {
-				panic(err)
+			if e,ok := err.(*exec.Error); ok {
+				panic("error running goimports on file " + file + ": " + e.Error())	// perhaps goimports is not installed?
+			} else if e,ok := err.(*exec.ExitError); ok {
+				// Likely a syntax error in the resulting file
+				log.Print(e.Stderr)
 			}
 		}
 	} else {
 		_,err :=  sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
 		if err != nil {
-			if _,ok := err.(*exec.ExitError); ok {
-				panic("error running fmt on file " + file + ": " + string(err.(*exec.ExitError).Stderr))
-			} else {
-				panic(err)
+			if e,ok := err.(*exec.Error); ok {
+				panic("error running goimports on file " + file + ": " + e.Error())	// perhaps goimports is not installed?
+			} else if e,ok := err.(*exec.ExitError); ok {
+				// Likely a syntax error in the resulting file
+				log.Print(e.Stderr)
 			}
 		}
-
 	}
 	_ = os.Chdir(curDir)
 }
