@@ -254,6 +254,8 @@ so if this is a heavily used template,  avoid it. Usually you will not notice a 
 and the third option can be very convenient. This third option is simply any go variable surrounded by mustaches 
 with no spaces.
 
+The i, u, and f tags use the strconv package, so be sure to include that in your template.
+
 #### Escaping Dynamic Text
 
 Some value types potentially could produce html reserved characters. The following tags will html escape
