@@ -199,7 +199,7 @@ func postProcess(file string, runImports bool) {
 				panic("error running goimports on file " + file + ": " + e.Error())	// perhaps goimports is not installed?
 			} else if e,ok := err.(*exec.ExitError); ok {
 				// Likely a syntax error in the resulting file
-				log.Print(e.Stderr)
+				log.Print(string(e.Stderr))
 			}
 		}
 	} else {
@@ -209,7 +209,7 @@ func postProcess(file string, runImports bool) {
 				panic("error running goimports on file " + file + ": " + e.Error())	// perhaps goimports is not installed?
 			} else if e,ok := err.(*exec.ExitError); ok {
 				// Likely a syntax error in the resulting file
-				log.Print(e.Stderr)
+				log.Print(string(e.Stderr))
 			}
 		}
 	}
