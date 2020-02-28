@@ -466,13 +466,6 @@ func processParams(in, paramString string) (out string, err error) {
 		in = strings.Replace(in, search, s, -1)
 	}
 
-	// Default missing parameters to blanks
-	for j := i + 1; j < 9; j++ {
-		search := fmt.Sprintf("$%d", j)
-		if strings.Index(in, search) != -1 {
-			in = strings.Replace(in, search, "", -1)
-		}
-	}
 	out = in
 	return
 }

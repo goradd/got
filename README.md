@@ -336,8 +336,10 @@ placeholders ($1 - $9). Parameters should be separated by commas, and can be sur
       {{put fragName param1,param2,...}} or just
       {{fragName param1,param2,...}}
  
-If a defined fragment is not defined with the given name, got will panic and stop compiling.
+If a defined fragment is not found with the given name, got will panic and stop compiling.
+
 param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
+If a parameter is not included, the substitution will not be done and the $1 will remain as a $1.
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
 `{{end}}` tag. The end tag must be just like that, with no spaces inside the tag.
