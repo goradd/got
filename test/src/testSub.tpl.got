@@ -51,6 +51,8 @@ func myTest4(buf *bytes.Buffer) {
 {{
 Substituted:
 {{third You}}
+Not Substituted:
+{{third}}
 }}
 }
 

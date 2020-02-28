@@ -430,13 +430,11 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 		return l.errorf("Named block not found: %s", name)
 	}
 
-	// If params are found, do the substitution
-	if paramString != "" {
-		var err error
-		if block, err = processParams(block, paramString); err != nil {
+	// process parameters
+	var err error
+	if block, err = processParams(block, paramString); err != nil {
 			return l.errorf(err.Error())
 		}
-	}
 
 	l2 := &lexer{
 		input:     block,
@@ -470,7 +468,7 @@ func processParams(in, paramString string) (out string, err error) {
 
 	// Default missing parameters to blanks
 	for j := i + 1; j < 9; j++ {
-		search := fmt.Sprintf("$%d", j+1)
+		search := fmt.Sprintf("$%d", j)
 		if strings.Index(in, search) != -1 {
 			in = strings.Replace(in, search, "", -1)
 		}
@@ -907,6 +905,7 @@ func (l *lexer) ignoreRun() {
 }
 
 func (l *lexer) ignoreSpace() {
+	l.ignore()
 	for {
 		r := l.next()
 		switch {
@@ -922,6 +921,7 @@ func (l *lexer) ignoreSpace() {
 }
 
 func (l *lexer) ignoreWhiteSpace() {
+	l.ignore()
 	for {
 		r := l.next()
 		switch {
@@ -938,6 +938,7 @@ func (l *lexer) ignoreWhiteSpace() {
 
 // ignoreOneSpace ignores one space, INCLUDING white space characters.
 func (l *lexer) ignoreOneSpace() {
+	l.ignore()
 	r := l.next()
 	switch {
 	case r == eof:
@@ -963,6 +964,7 @@ func (l *lexer) ignoreOneSpace() {
 
 // ignoreNewline steps over a newline and ignores it. If we are not on a newline, nothing will happen.
 func (l *lexer) ignoreNewline() {
+	l.ignore()
 	r := l.next()
 	switch {
 	case r == eof:
@@ -985,6 +987,7 @@ func (l *lexer) ignoreNewline() {
 }
 
 func (l *lexer) ignoreCloseTag() {
+	l.ignore()
 	if l.isAtCloseTag() {
 		r := l.next()
 		if r == ' ' {
