@@ -21,10 +21,14 @@ type Pos int
 var IncludePaths []string
 var IncludeFiles []string
 
-var namedBlocks map[string]string
+type namedBlockEntry struct {
+	text string
+	paramCount int
+}
+var namedBlocks map[string]namedBlockEntry
 
 func init() {
-	namedBlocks = make(map[string]string)
+	namedBlocks = make(map[string]namedBlockEntry)
 }
 
 func (i item) String() string {
@@ -90,17 +94,19 @@ func Lex(input string, fileName string) *lexer {
 		items:    make(chan item),
 	}
 	// make predefined named blocks
-	path, err := filepath.Abs(fileName)
-	base := filepath.Base(path)
+	filePath, err := filepath.Abs(fileName)
+	base := filepath.Base(filePath)
 	root := base
 	if offset := strings.Index(root, "."); offset >= 0 {
 		root = root[0:offset]
 	}
+	dir := filepath.Base(filepath.Dir(filePath))
 
 	if err == nil {
-		namedBlocks["templatePath"] = path
-		namedBlocks["templateName"] = base
-		namedBlocks["templateRoot"] = root
+		namedBlocks["templatePath"] = namedBlockEntry{filePath, 0}
+		namedBlocks["templateName"] = namedBlockEntry{base, 0}
+		namedBlocks["templateRoot"] = namedBlockEntry{root, 0}
+		namedBlocks["templateDir"] = namedBlockEntry{dir, 0}
 	}
 
 	go l.run()
@@ -108,8 +114,8 @@ func Lex(input string, fileName string) *lexer {
 }
 
 func (l *lexer) emitType(t itemType) {
-	item := item{typ: t}
-	l.emit(item)
+	i := item{typ: t}
+	l.emit(i)
 }
 
 func (l *lexer) emit(i item) {
@@ -261,8 +267,8 @@ func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
 
 	// Assemble the relative paths collected so far
 	var relPath string
-	for _,path := range l.relativePaths {
-		relPath = filepath.Join(relPath, path)
+	for _,thisPath := range l.relativePaths {
+		relPath = filepath.Join(relPath, thisPath)
 	}
 
 	curRelPath := path.Dir(fileName)
@@ -270,8 +276,8 @@ func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
 	// find the file from the include paths, which allows the include paths to override the immediate path
 	var buf []byte
 	if len(IncludePaths) > 0 {
-		for _, path := range IncludePaths {
-			fileName2 := filepath.Join(path, relPath, fileName)
+		for _, thisPath := range IncludePaths {
+			fileName2 := filepath.Join(thisPath, relPath, fileName)
 			if buf, err = ioutil.ReadFile(fileName2); err == nil {
 				log.Println("Opened " + fileName2)
 				fileName = fileName2
@@ -367,8 +373,21 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 	name := l.currentString()
 	l.ignoreCloseTag()
 
-	if strings.ContainsAny(name, " \t\r\n") {
+	items := strings.Split(name," ")
+	var paramCount int
+	if len(items) == 2 {
+		var err error
+		name = items[0]
+		paramCount,err = strconv.Atoi(items[1])
+		if err != nil {
+			return l.errorf("Item after block name must be the parameter count")
+		}
+	} else if len(items) > 2 {
 		return l.errorf("Block name cannot contain spaces")
+	}
+
+	if strings.ContainsAny(name, "\t\r\n") {
+		return l.errorf("Block name cannot have tabs or newlines after it")
 	}
 
 	if _, ok := tokens["{{"+name]; ok {
@@ -380,7 +399,7 @@ func (l *lexer) lexNamedBlock(nextState stateFn) stateFn {
 		return l.errorf("No end block found")
 	}
 
-	namedBlocks[name] = l.input[l.start : l.start+offset]
+	namedBlocks[name] = namedBlockEntry{l.input[l.start : l.start+offset], paramCount}
 	l.start = l.start + offset + len(tokEndBlock)
 	l.pos = l.start
 
@@ -423,8 +442,9 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 
 	l.ignoreCloseTag()
 
-	var block string
+	var block namedBlockEntry
 	var ok bool
+	var processedBlock string
 
 	if block, ok = namedBlocks[name]; !ok {
 		return l.errorf("Named block not found: %s", name)
@@ -432,12 +452,12 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 
 	// process parameters
 	var err error
-	if block, err = processParams(block, paramString); err != nil {
+	if processedBlock, err = processParams(name, block, paramString); err != nil {
 			return l.errorf(err.Error())
 		}
 
 	l2 := &lexer{
-		input:     block,
+		input:     processedBlock,
 		blockName: name,
 		items:     l.items,
 	}
@@ -451,22 +471,31 @@ func (l *lexer) lexSubstitute(nextState stateFn) stateFn {
 	return nextState
 }
 
-func processParams(in, paramString string) (out string, err error) {
+func processParams(name string, in namedBlockEntry, paramString string) (out string, err error) {
 	paramString = strings.TrimSpace(paramString)
 	params, err := splitParams(paramString)
 
 	if err != nil {
 		return
 	}
+	out = in.text
 
 	var i int
 	var s string
 	for i, s = range params {
+		if i >= in.paramCount {
+			err = fmt.Errorf("too many parameters given for named block %s", name)
+		}
 		search := fmt.Sprintf("$%d", i+1)
-		in = strings.Replace(in, search, s, -1)
+		out = strings.Replace(out, search, s, -1)
 	}
 
-	out = in
+	for ; i < in.paramCount; i++ {
+		// missing parameters will get an empty value
+		search := fmt.Sprintf("$%d", i+1)
+		out = strings.Replace(out, search, "", -1)
+	}
+
 	return
 }
 
@@ -478,7 +507,7 @@ func splitParams(paramString string) (params []string, err error) {
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 		text := s.TokenText()
 		if len(text) > 0 && text[0] == '"' && (len(text) == 1 || text[len(text)-1] != '"') {
-			err = fmt.Errorf("Defined block parameter has a beginning quote with no ending quote: %s", text)
+			err = fmt.Errorf("defined block parameter has a beginning quote with no ending quote: %s", text)
 			return
 		}
 		if text == "," {
@@ -489,7 +518,7 @@ func splitParams(paramString string) (params []string, err error) {
 						//currentItem = currentItem[1 : len(currentItem)-1]
 						currentItem,err = strconv.Unquote(currentItem)
 					} else {
-						err = fmt.Errorf("Defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
+						err = fmt.Errorf("defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
 						return
 					}
 				}
@@ -507,7 +536,7 @@ func splitParams(paramString string) (params []string, err error) {
 				//currentItem = currentItem[1 : len(currentItem)-1]
 				currentItem,err = strconv.Unquote(currentItem)
 			} else {
-				err = fmt.Errorf("Defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
+				err = fmt.Errorf("defined block parameter starts with a quote but does not end with a quote: %s", currentItem)
 				return
 			}
 		}
@@ -592,10 +621,10 @@ func splitParams(paramString string) (params []string, err error) {
 	return
 */
 }
-
+/*
 func cleanEscapedQuotes(s string) string {
 	return strings.Replace(s, "\\\"", "\"", -1)
-}
+}*/
 
 func (l *lexer) lexComment(nextState stateFn) stateFn {
 	l.ignoreRun()
