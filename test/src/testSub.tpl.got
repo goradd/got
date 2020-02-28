@@ -12,7 +12,7 @@ Here is some text to print. {{= s }}
 }}
 {{end}}
 
-{{define second}}
+{{define second 1}}
 buf.WriteString("$1")
 {{end}}
 
@@ -42,7 +42,7 @@ Substituted:
 {{second Me}}
 }
 
-{{define third}}{{g
+{{define third 1}}{{g
 buf.WriteString("$1")
 }}
 {{end}}
@@ -51,6 +51,8 @@ func myTest4(buf *bytes.Buffer) {
 {{
 Substituted:
 {{third You}}
+Not Substituted:
+{{third}}
 }}
 }
 

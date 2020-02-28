@@ -331,21 +331,28 @@ any time before it is included, including being defined in other include files. 
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
 
-    {{< fragName }} or {{define fragName }}          Start a block called "fragName".
-    {{> fragName param1,param2,...}} or              Substitute this tag for the given defined fragment.
+    {{< fragName }} or {{define fragName }}                      Start a block called "fragName".
+    {{< fragName <count>}} or {{define fragName <count>}}        Start a block called "fragName" that will have <count> parameters.
+    {{> fragName param1,param2,...}} or                          Substitute this tag for the given defined fragment.
       {{put fragName param1,param2,...}} or just
       {{fragName param1,param2,...}}
  
-If a defined fragment is not defined with the given name, got will panic and stop compiling.
+If you attempt to use a fragment that was not previously defined, GoT will panic and stop compiling.
+
 param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
+If a parameter is not included when using a fragment, an empty value will be substituted for the parameter in the fragment.
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
 `{{end}}` tag. The end tag must be just like that, with no spaces inside the tag.
 
 The following fragments are predefined:
-* `{{templatePath}}` will result in the full path of the template file
+* `{{templatePath}}` will result in the full path of the template file being processed
 * `{{templateName}}` will produce the base name of the template file, including any extensions
 * `{{templateRoot}}` will produce the base name of the template file without any extensions
+* `{{templateDir}}` will produce the directory name of the template file being processed, without the preceeding path
+
+Note that if you are looking at these from an included file, these will be the parent file. Multiple
+levels of includes will return the information for the top level file being processed. 
 
 #### Example
 ```
@@ -356,7 +363,7 @@ This is my html body.
 </p>
 {{end}}
 
-{{< writeMe }}
+{{< writeMe 2}}
 {{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
 {{g 
 if $2 {

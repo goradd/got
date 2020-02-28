@@ -1,0 +1,16 @@
+package test
+
+import (
+	"bytes"
+	"fmt"
+)
+
+{{define badBlock 1}}
+{{
+Hey $1
+}}
+
+func tooManyParams(buf bytes.Buffer) {
+{{badBlock a,b}}
+}
+
