@@ -144,7 +144,9 @@ func init() {
 	tokens["{{:"] = item{typ: itemInclude}       // must follow with a file name
 	tokens["{{include"] = item{typ: itemInclude} // must follow with a file name
 	tokens["{{:h"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true}       // must follow with a file name
-	tokens["{{includeEscaped"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true} // must follow with a file name
+	tokens["{{includeAsHtml"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true} // must follow with a file name
+	tokens["{{:!"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:false}       // must follow with a file name
+	tokens["{{includeEscaped"] = item{typ: itemInclude, escaped:true, withError: false, htmlBreaks:false} // must follow with a file name
 
 
 	tokens["{{-"] = item{typ: itemBackup}      // Can be followed by a number to indicate how many chars to backup

@@ -64,13 +64,14 @@ func outputRun(parent item, item item, prevTextEndedWithNewline bool) (string, b
 	case itemStrictBlock:
 		r,_ := utf8.DecodeLastRuneInString(item.val)
 		thisEndedWithNewline := r == '\n'
+
 		if !prevTextEndedWithNewline && item.newline {
-			item.val = "\n" + item.val // TODO: Windows newline if on windows?
+			item.val = "\n" + item.val
 		}
 		return outputText(parent, item.val), thisEndedWithNewline
 
 	case itemConvert:
-		return outputHtml(parent, item.val), false
+		return outputHtml(parent, item.val, item.htmlBreaks), false
 
 	default:
 		return outputValue(parent, item.val), false
@@ -147,23 +148,27 @@ func outputText(item item, val string) string {
 }
 
 // Convert text to html
-func outputHtml(item item, val string) string {
+func outputHtml(item item, val string, htmlNewlines bool) string {
 	val = html.EscapeString(val)
-	val = strings.Replace(val, "\n\n", "</p>\n<p>", -1)
-	val = strings.Replace(val, "\r\r", "</p>\n<p>", -1)
+	if htmlNewlines {
+		val = strings.Replace(val, "\r\n", "\n", -1)
+		val = strings.Replace(val, "\n\n", "</p><p>", -1)
+		val = strings.Replace(val, "\n", "<br>\n", -1)
+		val = strings.Replace(val, "</p><p>", "</p>\n<p>", -1) // pretty print it so its inspectable
 
-	val = "<p>" + val + "</p>\n"
+		val = "<p>" + val + "</p>\n"
+	}
 
 	if item.translate {
 		return "\nt.Translate(buf, " + quoteText(val) + ")\n"
-	} else {
+	} else  {
 		return "\nbuf.WriteString(" + quoteText(val) + ")\n"
 	}
 
 }
 
 // Generally speaking, text is quoted with a backtick character. However, there is a special case. If the text actually
-// contains a backtick characrer, we cannot use backticks to quote them, but rather double-quotes. This function prepares
+// contains a backtick character, we cannot use backticks to quote them, but rather double-quotes. This function prepares
 // text, looking for these backticks, and then returns a golang quoted text that can be suitably used in all situations.
 func quoteText(val string) string {
 	return "`" + strings.Replace(val, "`", "` + \"`\" + `", -1) + "`"

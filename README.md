@@ -317,9 +317,14 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 Example: `{{: "myTemplate.inc" }}`
 
 #### Include a text file
-    {{:h "fileName" }} or {{includeEscaped "fileName" }}   Inserts the given file name into the template and html escapes it.
 
-Use this to include a text file that you want to reproduce in html.
+    {{:! "fileName" }} or {{includeEscaped "fileName" }}   Inserts the given file name into the template and html escapes it.
+    {{:h "fileName" }} or {{includeAsHtml "fileName" }}   Inserts the given file name into the template, html escapes it, and converts newlines into html breaks.
+
+Use `{{:!` to include a file that you surround with a `<pre>` tag to include a text file
+and have it appear in an html document looking the same. Use `{{:h` to include a file
+without the `<pre>` tags, but if the file uses extra spaces for indent, those spaces will
+not indent in the html.
  
 ### Defined Fragments
 

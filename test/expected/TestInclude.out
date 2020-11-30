@@ -4,21 +4,31 @@ The end.
 	Escaped html &lt;
 	</p>
 
-<p>This is text
+This is text
 that is both escaped and has
 html paragraphs and breaks inserted.
-</p>
 
 
 right
 
-<html>
-<head>
+&lt;html&gt;
+&lt;head&gt;
 
-</head>
-<body>
-<p>
+&lt;/head&gt;
+&lt;body&gt;
+&lt;p&gt;
     A typical html document
-</p>
-</body>
-</html>
+&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+<p>&lt;html&gt;<br>
+&lt;head&gt;</p>
+<p>&lt;/head&gt;<br>
+&lt;body&gt;<br>
+&lt;p&gt;<br>
+    A typical html document<br>
+&lt;/p&gt;<br>
+&lt;/body&gt;<br>
+&lt;/html&gt;</p>
+
