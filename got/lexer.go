@@ -178,7 +178,7 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 		return l.lexStrictBlock(priorState, newline)
 
 	case itemInclude:
-		return l.lexInclude(priorState, i.htmlBreaks)
+		return l.lexInclude(priorState, i.htmlBreaks, i.escaped)
 
 	case itemNamedBlock:
 		return l.lexNamedBlock(priorState)
@@ -249,7 +249,7 @@ func (l *lexer) lexStrictBlock(nextState stateFn, newline bool) stateFn {
 	return nextState
 }
 
-func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
+func (l *lexer) lexInclude(nextState stateFn, htmlBreaks bool, escaped bool) stateFn {
 	l.ignore()
 	l.acceptRun()
 	fileName := strings.TrimSpace(l.currentString())
@@ -313,11 +313,11 @@ func (l *lexer) lexInclude(nextState stateFn, convert bool) stateFn {
 
 	s := string(buf[:])
 
-	if convert {
+	if htmlBreaks || escaped {
 		// treat file like a text file
 		l.ignore()
 		l.emitType(itemConvert)
-		l.emit(item{typ:itemRun, val: s})
+		l.emit(item{typ:itemRun, val: s, htmlBreaks: htmlBreaks, escaped: escaped})
 		l.emitType(itemEnd)
 
 		return nextState

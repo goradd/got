@@ -1,13 +1,12 @@
 language: go
 
 go:
-  - "1.11.x"
-  - "1.12.x"
-  - "1.13.x"
+  - "1.14.x"
+  - "1.15.x"
 
 script:
-  - env GO111MODULE=on go install
-  - env GO111MODULE=on go test -v
+  - go install
+  - go test -v
 
 install:
   - go get golang.org/x/tools/cmd/goimports

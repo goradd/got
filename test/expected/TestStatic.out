@@ -3,9 +3,9 @@ Testing quotes: "'`
 <p>
 Escaped html &lt;
 </p>
-<p>This is text that
-	is escaped.</p>
-<p>	And has html paragraphs inserted.
-</p>
+This is text that
+	is escaped.
+
+	And has html paragraphs inserted.
 
 This should be testStatic: testStatic

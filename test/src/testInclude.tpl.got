@@ -25,7 +25,12 @@ The end.
 
 {{
 {{# Including an html file in text mode }}
-{{: "testInclude3.html" }}
+{{:! "testInclude3.html" }}
+}}
+
+{{
+{{# Including an html file in html mode }}
+{{:h "testInclude3.html" }}
 }}
 
 
