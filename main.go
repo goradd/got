@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-var args string	// A neat little trick to directly test the main function. If we are testing, this will get set.
+var args string // A neat little trick to directly test the main function. If we are testing, this will get set.
 var modules map[string]string
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 	files := flag.Args()
 
 	var err error
-	if modules,err = sys.ModulePaths(); err != nil {
+	if modules, err = sys.ModulePaths(); err != nil {
 		panic(err)
 	}
 
@@ -50,14 +50,22 @@ func main() {
 		fmt.Println("-i: run goimports on the result files to automatically fix up the import statement and format the file. You will need goimports installed.")
 		fmt.Println("-I: the list of directories to search for include files, or files to prepend before every processed file. Files are searched in the order given, and first one found will be used.")
 		fmt.Println("-d: The directory to search for files if using the -t directive.")
+		return
 	}
 
 	got.IncludePaths = []string{}
 	got.IncludeFiles = []string{}
 	if includes != "" {
-		i := filepath.SplitList(includes)
-		for _, i2 := range i {
-			p := getRealPath(i2)
+		for includes != "" {
+			var cur string
+			if offset := strings.IndexAny(includes, ":;"); offset != -1 {
+				cur = includes[:offset]
+				includes = includes[offset+1:]
+			} else {
+				cur = includes
+				includes = ""
+			}
+			p := getRealPath(cur)
 			if fi, err := os.Stat(p); err != nil {
 				fmt.Println("Include path " + p + " does not exist.")
 			} else if fi.IsDir() {
@@ -82,8 +90,8 @@ func main() {
 	}
 
 	if outDir == "" {
-		if outDir,err = os.Getwd(); err != nil {
-			panic ("Could not use the current directory as the output directory.")
+		if outDir, err = os.Getwd(); err != nil {
+			panic("Could not use the current directory as the output directory.")
 		}
 	}
 	outDir = getRealPath(outDir)
@@ -125,7 +133,6 @@ func getRealPath(path string) string {
 	}
 	return newPath
 }
-
 
 func processFile(file string) string {
 	var s string
@@ -189,25 +196,25 @@ func writeFile(s string, file string, outDir string) string {
 }
 
 func postProcess(file string, runImports bool) {
-	curDir,_ := os.Getwd()
+	curDir, _ := os.Getwd()
 	dir := filepath.Dir(file)
 	_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
 	if runImports {
-		_,err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
+		_, err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
 		if err != nil {
-			if e,ok := err.(*exec.Error); ok {
-				panic("error running goimports on file " + file + ": " + e.Error())	// perhaps goimports is not installed?
-			} else if e,ok := err.(*exec.ExitError); ok {
+			if e, ok := err.(*exec.Error); ok {
+				panic("error running goimports on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
+			} else if e, ok := err.(*exec.ExitError); ok {
 				// Likely a syntax error in the resulting file
 				log.Print(string(e.Stderr))
 			}
 		}
 	} else {
-		_,err :=  sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
+		_, err := sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
 		if err != nil {
-			if e,ok := err.(*exec.Error); ok {
-				panic("error running goimports on file " + file + ": " + e.Error())	// perhaps goimports is not installed?
-			} else if e,ok := err.(*exec.ExitError); ok {
+			if e, ok := err.(*exec.Error); ok {
+				panic("error running goimports on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
+			} else if e, ok := err.(*exec.ExitError); ok {
 				// Likely a syntax error in the resulting file
 				log.Print(string(e.Stderr))
 			}
@@ -224,4 +231,3 @@ func ProcessString(input string, fileName string) string {
 
 	return s
 }
-
