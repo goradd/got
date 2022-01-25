@@ -42,7 +42,7 @@ func TestSplitParams(t *testing.T) {
 	assert.Error(t, err)
 
 }
-
+/*
 func TestProcessParams(t *testing.T) {
 	var out string
 	//var err error
@@ -61,3 +61,4 @@ func TestProcessParams(t *testing.T) {
 	assert.Equal(t, `a b ""`, out)
 
 }
+*/

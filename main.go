@@ -223,7 +223,7 @@ func postProcess(file string, runImports bool) {
 	_ = os.Chdir(curDir)
 }
 
-//Process a string that is a got template, and return the go code
+// ProcessString processes a string that is a got template, and returns the go code that outputs the template
 func ProcessString(input string, fileName string) string {
 	l := got.Lex(input, fileName)
 

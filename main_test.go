@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/goradd/gofile/pkg/sys"
-	"testing"
-	"path/filepath"
-	"os"
-	"io/ioutil"
 	"bytes"
+	"github.com/goradd/gofile/pkg/sys"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
 )
 
 // This file runs the tests found in the test directory. It is set up so that code coverage can be checked as well.
@@ -20,11 +20,12 @@ func TestGot(t *testing.T) {
 
 	main()
 
-	testPath := filepath.Join(`github.com/goradd/got/test`)
+	testPath := filepath.Join(`./test`)
 	runnerPath := filepath.Join(testPath, "runner", "runner.go")
 	comparePath := filepath.Join(testPath, "compare")
 	expectedPath := filepath.Join(testPath, "expected")
-	sys.ExecuteShellCommand("go run " + runnerPath + " " + comparePath)
+	cmd := "go run " + runnerPath + " " + comparePath
+	sys.ExecuteShellCommand(cmd)
 
 	// compare the outputs and report differences
 

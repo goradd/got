@@ -31,7 +31,7 @@ func init() {
 	namedBlocks = make(map[string]namedBlockEntry)
 }
 
-func (i item) String() string {
+func (i tokenItem) String() string {
 	switch i.typ {
 	case itemError:
 		return i.val
@@ -51,13 +51,13 @@ func (i item) String() string {
 }
 
 type lexer struct {
-	fileName  string    // file name being scanned
-	blockName string    // named block being scanned
-	input     string    // string being scanned
-	start     int       // start position of item
-	pos       int       // current position
-	width     int       // width of last rune
-	items     chan item // channel of scanned items
+	fileName  string         // file name being scanned
+	blockName string         // named block being scanned
+	input     string         // string being scanned
+	start     int            // start position of tokenItem
+	pos       int            // current position
+	width     int            // width of last rune
+	items     chan tokenItem // channel of scanned items
 	hasError  bool
 	openCount int // Make sure open and close tags are matched
 	relativePaths []string // when including files, keeps track of the relative paths to search
@@ -75,7 +75,7 @@ func (l *lexer) run() {
 
 // nextItem returns the next item from the input.
 // Called by the parser, not in the lexing goroutine.
-func (l *lexer) nextItem() item {
+func (l *lexer) nextItem() tokenItem {
 
 	select {
 	case i := <-l.items:
@@ -83,7 +83,7 @@ func (l *lexer) nextItem() item {
 		return i
 	case <-time.After(10 * time.Second): // Internal error? We are supposed to detect EOF situations before we get here
 		//close(l.items)
-		return item{typ: itemError, val: "*** Internal error at line " + strconv.Itoa(l.getLine()) + " read past end of file " + l.fileName + ". Are you missing an end tag?"}
+		return tokenItem{typ: itemError, val: "*** Internal error at line " + strconv.Itoa(l.getLine()) + " read past end of file " + l.fileName + ". Are you missing an end tag?"}
 	}
 }
 
@@ -91,7 +91,7 @@ func Lex(input string, fileName string) *lexer {
 	l := &lexer{
 		input:    input,
 		fileName: fileName,
-		items:    make(chan item),
+		items:    make(chan tokenItem),
 	}
 	// make predefined named blocks
 	filePath, err := filepath.Abs(fileName)
@@ -113,24 +113,24 @@ func Lex(input string, fileName string) *lexer {
 	return l
 }
 
-func (l *lexer) emitType(t itemType) {
-	i := item{typ: t}
+func (l *lexer) emitType(t tokenType) {
+	i := tokenItem{typ: t}
 	l.emit(i)
 }
 
-func (l *lexer) emit(i item) {
+func (l *lexer) emit(i tokenItem) {
 	if i.val == "" {
 		i.val = l.input[l.start:l.pos]
 	}
 
 	l.items <- i
 	l.start = l.pos
-	//fmt.Printf("%v", item)
+	//fmt.Printf("%v", tokenItem)
 
 }
 
 func (l *lexer) emitRun(prefix string, suffix string) {
-	var i = item{typ: itemRun, val: prefix + l.input[l.start:l.pos] + suffix}
+	var i = tokenItem{typ: itemRun, val: prefix + l.input[l.start:l.pos] + suffix}
 	l.emit(i)
 }
 
@@ -145,7 +145,7 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 	pos := l.pos
 	a := l.acceptTag()
 
-	var i item
+	var i tokenItem
 	var ok bool
 
 	if i, ok = tokens[a]; !ok {
@@ -241,7 +241,7 @@ func (l *lexer) lexStrictBlock(nextState stateFn, newline bool) stateFn {
 		return l.errorf("No strict end block found")
 	}
 	l.pos += offset
-	l.emit(item{typ:itemRun, newline:newline})
+	l.emit(tokenItem{typ: itemRun, newline:newline})
 	l.start += len(endToken) // skip end token
 	l.pos = l.start
 	l.width = 0
@@ -317,7 +317,7 @@ func (l *lexer) lexInclude(nextState stateFn, htmlBreaks bool, escaped bool) sta
 		// treat file like a text file
 		l.ignore()
 		l.emitType(itemConvert)
-		l.emit(item{typ:itemRun, val: s, htmlBreaks: htmlBreaks, escaped: escaped})
+		l.emit(tokenItem{typ: itemRun, val: s, htmlBreaks: htmlBreaks, escaped: escaped})
 		l.emitType(itemEnd)
 
 		return nextState
@@ -547,26 +547,26 @@ func splitParams(paramString string) (params []string, err error) {
 	items := strings.Split(paramString, ",")
 
 	// Check to see if we split something surrounded by quotes
-	for _, item := range items {
-		cleanItem = strings.TrimSpace(item)
+	for _, tokenItem := range items {
+		cleanItem = strings.TrimSpace(tokenItem)
 		if len(cleanItem) == 0 {
 			if currentItem != "" {
-				currentItem += "," + item
+				currentItem += "," + tokenItem
 			} else {
 				params = append(params, cleanItem)
 			}
 		} else if cleanItem[0:1] == "\"" {
 			if cleanItem[len(cleanItem)-1:] == "\"" {
-				if len(cleanItem) > 1 && item[len(cleanItem)-2:len(cleanItem)-1] != "\\" {
-					// an item bounded by quotes, so add it without the quotes
-					currentItem = item[1 : len(cleanItem)-1]
+				if len(cleanItem) > 1 && tokenItem[len(cleanItem)-2:len(cleanItem)-1] != "\\" {
+					// an tokenItem bounded by quotes, so add it without the quotes
+					currentItem = tokenItem[1 : len(cleanItem)-1]
 					currentItem = cleanEscapedQuotes(currentItem)
 					params = append(params, currentItem)
 					currentItem = ""
 				} else if len(cleanItem) == 1 {
-					// a single quote, so either begin or end with a blank item
+					// a single quote, so either begin or end with a blank tokenItem
 					if currentItem == "" {
-						// start the item
+						// start the tokenItem
 						currentItem = ","
 					} else {
 						currentItem += ","
@@ -574,40 +574,40 @@ func splitParams(paramString string) (params []string, err error) {
 						currentItem = ""
 					}
 				} else {
-					// an item started with a quote, but ended with an escaped quote, so build the string using the original non-cleaned item.
-					offset := strings.Index(item, "\"")
-					currentItem = cleanEscapedQuotes(item[offset+1:])
+					// an tokenItem started with a quote, but ended with an escaped quote, so build the string using the original non-cleaned tokenItem.
+					offset := strings.Index(tokenItem, "\"")
+					currentItem = cleanEscapedQuotes(tokenItem[offset+1:])
 				}
 			} else {
-				// an item started with a quote, but not ended with a quote, so build the item
-				offset := strings.Index(item, "\"")
-				currentItem = cleanEscapedQuotes(item[offset+1:])
+				// an tokenItem started with a quote, but not ended with a quote, so build the tokenItem
+				offset := strings.Index(tokenItem, "\"")
+				currentItem = cleanEscapedQuotes(tokenItem[offset+1:])
 			}
 		} else {
 			if cleanItem[len(cleanItem)-1:] == "\"" {
 				if len(cleanItem) > 1 && cleanItem[len(cleanItem)-2:len(cleanItem)-1] != "\\" {
-					// an item ending with a quote, but not started with a quote
+					// an tokenItem ending with a quote, but not started with a quote
 					if currentItem != "" {
-						lastOffset := strings.LastIndex(item, "\"")
-						currentItem += "," + cleanEscapedQuotes(item[:lastOffset])
+						lastOffset := strings.LastIndex(tokenItem, "\"")
+						currentItem += "," + cleanEscapedQuotes(tokenItem[:lastOffset])
 						params = append(params, currentItem)
 						currentItem = ""
 					} else {
-						err = fmt.Errorf("Defined block parameter ends with a quote but does not start with a quote: %s", item)
+						err = fmt.Errorf("Defined block parameter ends with a quote but does not start with a quote: %s", tokenItem)
 						return
 					}
 				} else {
-					// an item ending with an escaped quote, so just include it.
+					// an tokenItem ending with an escaped quote, so just include it.
 					if currentItem != "" {
-						currentItem += "," + cleanEscapedQuotes(item)
+						currentItem += "," + cleanEscapedQuotes(tokenItem)
 					} else {
 						params = append(params, cleanItem)
 					}
 				}
 			} else {
-				// A normal item
+				// A normal tokenItem
 				if currentItem != "" {
-					currentItem += "," + cleanEscapedQuotes(item)
+					currentItem += "," + cleanEscapedQuotes(tokenItem)
 				} else {
 					params = append(params, cleanItem)
 				}
@@ -732,7 +732,7 @@ func (l *lexer) lexText(nextState stateFn, newline bool) stateFn {
 
 	if !l.isAtCloseTag() {
 		l.acceptRun()
-		l.emit(item{typ:itemRun, newline:newline})
+		l.emit(tokenItem{typ: itemRun, newline:newline})
 	}
 
 	if l.isAtCloseTag() {
@@ -815,9 +815,9 @@ func (l *lexer) isAtCloseTag() bool {
 func (l *lexer) errorf(format string, args ...interface{}) stateFn {
 	l.hasError = true
 	if l.blockName != "" {
-		l.items <- item{typ: itemError, val: "*** Error at line " + strconv.Itoa(l.getLine()) + " of block '" + l.blockName + "': " + fmt.Sprintf(format, args...)}
+		l.items <- tokenItem{typ: itemError, val: "*** Error at line " + strconv.Itoa(l.getLine()) + " of block '" + l.blockName + "': " + fmt.Sprintf(format, args...)}
 	} else {
-		l.items <- item{typ: itemError, val: "*** Error at line " + strconv.Itoa(l.getLine()) + " of file '" + l.fileName + "': " + fmt.Sprintf(format, args...)}
+		l.items <- tokenItem{typ: itemError, val: "*** Error at line " + strconv.Itoa(l.getLine()) + " of file '" + l.fileName + "': " + fmt.Sprintf(format, args...)}
 	}
 	return nil
 }

@@ -10,23 +10,22 @@ import (
 var endedWithNewline = true
 
 type ast struct {
-	item  item
+	item  tokenItem
 	items []ast
 }
 
 func Parse(l *lexer) string {
-	item := item{typ: itemGo}
+	item := tokenItem{typ: itemGo}
 	return parseItem(l, item)
 }
 
+
 // Process the template items coming from the lexer and return the whole thing as a string
-func parseItem(l *lexer, parent item) string {
+func parseItem(l *lexer, parent tokenItem) string {
 	var ret string
-	var item item
 
-	for {
-		item = l.nextItem()
-
+	for  {
+		item := l.nextItem()
 		if item.typ == itemEOF {
 			endedWithNewline = true // prepare for next file
 			return ret
@@ -55,7 +54,7 @@ func parseItem(l *lexer, parent item) string {
 	return ret
 }
 
-func outputRun(parent item, item item, prevTextEndedWithNewline bool) (string, bool) {
+func outputRun(parent tokenItem, item tokenItem, prevTextEndedWithNewline bool) (string, bool) {
 	switch parent.typ {
 	case itemGo:
 		return outputGo(item.val, parent.withError), prevTextEndedWithNewline // straight go code
@@ -89,7 +88,7 @@ func outputGo(code string, withErr bool) string {
 	}
 }
 
-func outputValue(item item, val string) string {
+func outputValue(item tokenItem, val string) string {
 	writer := "buf.WriteString(%s)"
 
 	if item.htmlBreaks { // assume escaped too
@@ -132,7 +131,7 @@ func outputValue(item item, val string) string {
 // outputText sends plain text to the template. There are some nuances here.
 // The val includes the space character that comes after the opening tag. We may
 // or may not use that character, depending on the circumstances.
-func outputText(item item, val string) string {
+func outputText(item tokenItem, val string) string {
 	if val == "" {
 		return ""
 	}
@@ -148,7 +147,7 @@ func outputText(item item, val string) string {
 }
 
 // Convert text to html
-func outputHtml(item item, val string, htmlNewlines bool) string {
+func outputHtml(item tokenItem, val string, htmlNewlines bool) string {
 	val = html.EscapeString(val)
 	if htmlNewlines {
 		val = strings.Replace(val, "\r\n", "\n", -1)
@@ -175,5 +174,7 @@ func quoteText(val string) string {
 }
 
 func outputTruncate(n string) string {
-	return fmt.Sprintf("\nbuf.Truncate(buf.Len() - %s)\n", n)
+	return fmt.Sprintf(`
+buf.Rewind(%s)
+`, n)
 }

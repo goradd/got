@@ -26,8 +26,12 @@ Testing quotes: "'`
 This should be testStatic: {{templateRoot}}
 }}
 
-{{end}}
+{{ Backup test 12345 }}
+{{- }}
+{{ Backup test 12345 }}
+{{- 2}}
 
+{{end}}
 
 {{: "runner.inc" }}
 
