@@ -397,17 +397,6 @@ func OutTemplate(buf bytes.Buffer) {
 
 These tags and anything enclosed in them is removed from the compiled template.
 
-### Backup Tags
-
-    {{- }} or {{backup }}                 Backs up one character.
-    {{- <count>}} or {{backup <count>}}   Back up <count> characters.
-
-Sometimes you find that you need to remove text that has already been sent to a template. Include
-one of the above backup tags to do that.
-
-For example, `{{- 4}}` will back up 4 characters. Also, if you end a line with this tag, it will join the line with the 
-next line.  
-
 ### Go Block Tags
     
     {{if <go condition>}}<block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
@@ -426,6 +415,27 @@ These tags are substitutes for switching into GO mode and using a `for` or `if` 
 {{for}}
 }}
 ```
+### Join Tags
+
+    {{join <slice>, <string>}}<block>{{join}}    Joins the items of a slice with a string.
+
+Join will execute the <block> for each item of <slice>. Within <block> the variable
+"_i" will be an integer representing the index of the slic item, and "_j" will be the
+item itself. <block> should include GoT commands to output text. <string> will be output
+between the output of each item, creating an effect similar to joining a slice of strings.
+
+
+####Example
+
+```
+{{g
+  items := []string{"a", "b", "c"}
+}}
+{{join items,", "}}
+{{ {{_i}} = {{_j}}}}
+{{join}}
+```
+
 
 ### Strict Text Block Tag
 

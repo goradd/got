@@ -34,13 +34,7 @@ func parseItem(l *lexer, parent tokenItem) string {
 			return ret
 		}
 
-		if item.typ == itemBackup {
-			count := "1"
-			if item.val != "" {
-				count = item.val
-			}
-			ret += outputTruncate(count)
-		} else if item.typ == itemError {
+		if item.typ == itemError {
 			fmt.Println(item.val)
 			return ""
 		} else if item.typ == itemRun {
@@ -171,10 +165,4 @@ func outputHtml(item tokenItem, val string, htmlNewlines bool) string {
 // text, looking for these backticks, and then returns a golang quoted text that can be suitably used in all situations.
 func quoteText(val string) string {
 	return "`" + strings.Replace(val, "`", "` + \"`\" + `", -1) + "`"
-}
-
-func outputTruncate(n string) string {
-	return fmt.Sprintf(`
-buf.Rewind(%s)
-`, n)
 }

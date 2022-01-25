@@ -61,6 +61,7 @@ type lexer struct {
 	hasError  bool
 	openCount int // Make sure open and close tags are matched
 	relativePaths []string // when including files, keeps track of the relative paths to search
+	saved string
 }
 
 type stateFn func(*lexer) stateFn
@@ -217,6 +218,9 @@ func (l *lexer) lexTag(priorState stateFn) stateFn {
 
 	case itemFor:
 		return l.lexFor(priorState)
+
+	case itemJoin:
+		return l.lexJoin(priorState)
 
 	default:
 		l.emit(i)
@@ -675,6 +679,47 @@ func (l *lexer) lexFor(nextState stateFn) stateFn {
 	} else {
 		return l.lexGoExtra(nextState, " for ", " { ")
 	}
+}
+
+func (l *lexer) lexJoin(nextState stateFn) stateFn {
+	l.emitType(itemGo)
+	l.ignoreSpace()
+	l.openCount++
+
+	if l.isAtCloseTag() { // this is a closing join tag
+		return l.lexGoExtra(nextState, l.saved + " }\n", "")
+	}
+
+	l.acceptUntil(",")
+	if l.isAtCloseTag() {
+		return l.errorf("join blocks must have exactly 2 parameters separated by commas")
+	}
+	slice := strings.TrimSpace(l.currentString())
+	l.next()
+	l.ignore()
+	l.acceptRun()
+	separator := strings.TrimSpace(l.currentString())
+	l.ignore()
+	if !l.isAtCloseTag() {
+		return l.errorf("Expected close tag")
+	}
+
+	var err error
+	if separator[0] == '"' {
+		if separator, err = strconv.Unquote(separator); err != nil {
+			return l.errorf("Join separator error: %s", err.Error())
+		}
+	}
+
+	l.saved = 	fmt.Sprintf(`if _i < len(%s) - 1 {
+			buf.WriteString(%q)
+		}
+`, slice, separator)
+
+	return l.lexGoExtra(nextState, fmt.Sprintf(`
+for  _i, _j := range %s { 
+`, slice),
+"")
 }
 
 func (l *lexer) lexGo(nextState stateFn) stateFn {

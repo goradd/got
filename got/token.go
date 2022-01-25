@@ -52,6 +52,8 @@ const (
 	itemIf
 	itemElse
 	itemFor
+
+	itemJoin
 )
 
 var tokens map[string]tokenItem
@@ -152,10 +154,13 @@ func init() {
 	tokens["{{-"] = tokenItem{typ: itemBackup}      // Can be followed by a number to indicate how many chars to backup
 	tokens["{{backup"] = tokenItem{typ: itemBackup} // Can be followed by a number to indicate how many chars to backup
 
-	tokens["{{if"] = tokenItem{typ: itemIf} // Converted to a go statement
+	tokens["{{if"] = tokenItem{typ: itemIf} // Outputs a go "if" statement
 	tokens["{{else"] = tokenItem{typ: itemElse}
 
-	tokens["{{for"] = tokenItem{typ: itemFor} // Converted to a go statement
+	tokens["{{for"] = tokenItem{typ: itemFor} // Outputs a go "for" statement
+
+	tokens["{{join"] = tokenItem{typ: itemJoin} // Like a string.Join statement
+
 
 	tokens["}}"] = tokenItem{typ: itemEnd} // need to check this for white space BEFORE instead of after.
 }
