@@ -63,7 +63,7 @@ func outputRun(parent tokenItem, item tokenItem, prevTextEndedWithNewline bool) 
 		}
 		return outputText(parent, item.val), thisEndedWithNewline
 
-	case itemConvert:
+	case itemHtml:
 		return outputHtml(parent, item.val, item.htmlBreaks), false
 
 	default:

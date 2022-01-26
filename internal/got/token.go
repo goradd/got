@@ -14,11 +14,17 @@ type tokenItem struct {
 	htmlBreaks bool   // adds html break tags in exchange for newlines
 	val        string // filled in by lexer after initialization
 	newline	   bool   // a run of text should start on a new line
+	fileName   string
+	blockName  string
+	lineNum	   int
+	runeNum	   int
 }
 
 const (
 	tokEndBlock = "{{end}}"
-	tokEnd      = "}}" // must check for a white space before it
+	tokEnd      = "}}"
+	tokEndWithSpace      = " }}"
+	tokBegin    = "{{"
 )
 
 const (
@@ -31,11 +37,12 @@ const (
 	itemInclude    // immediately includes another file during lexing
 
 	itemEnd
-	itemConvert
+	itemHtml
 	itemGo
 	itemText
 
-	itemRun // The run of text that belongs to the previous tag
+	itemRun // A run of text
+	itemParam // an item in a parameter list
 
 	itemString
 	itemBool
@@ -47,7 +54,6 @@ const (
 
 	itemComment
 	itemEOF
-	itemBackup
 
 	itemIf
 	itemElse
@@ -121,8 +127,8 @@ func init() {
 	tokens["{{!"] = tokenItem{typ: itemText, escaped: true, withError: false}
 	tokens["{{esc"] = tokenItem{typ: itemText, escaped: true, withError: false}
 
-	tokens["{{h"] = tokenItem{typ: itemConvert}
-	tokens["{{html"] = tokenItem{typ: itemConvert}
+	tokens["{{h"] = tokenItem{typ: itemHtml}
+	tokens["{{html"] = tokenItem{typ: itemHtml}
 
 	// go code straight pass through
 	tokens["{{g"] = tokenItem{typ: itemGo}
@@ -150,9 +156,6 @@ func init() {
 	tokens["{{:!"] = tokenItem{typ: itemInclude, escaped:true, withError: false, htmlBreaks:false}             // must follow with a file name
 	tokens["{{includeEscaped"] = tokenItem{typ: itemInclude, escaped:true, withError: false, htmlBreaks:false} // must follow with a file name
 
-
-	tokens["{{-"] = tokenItem{typ: itemBackup}      // Can be followed by a number to indicate how many chars to backup
-	tokens["{{backup"] = tokenItem{typ: itemBackup} // Can be followed by a number to indicate how many chars to backup
 
 	tokens["{{if"] = tokenItem{typ: itemIf} // Outputs a go "if" statement
 	tokens["{{else"] = tokenItem{typ: itemElse}

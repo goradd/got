@@ -264,7 +264,7 @@ the output.
     {{!=, {{!s or {{!string    HTML escape a go string
     {{!w or {{!bytes           HTML escape a byte slice
     {{!v or {{!stringer        HTML escape a Stringer
-    {{!h                       Escape a go string and and html format breaks and newlines
+    {{!h                       Escape a go string and html format breaks and newlines
 
 These tags require you to import the "html" package. The `{{!h` tag also requires the "strings" package.
 

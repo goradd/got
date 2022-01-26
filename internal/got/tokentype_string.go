@@ -16,7 +16,7 @@ func _() {
 	_ = x[itemSubstitute-5]
 	_ = x[itemInclude-6]
 	_ = x[itemEnd-7]
-	_ = x[itemConvert-8]
+	_ = x[itemHtml-8]
 	_ = x[itemGo-9]
 	_ = x[itemText-10]
 	_ = x[itemRun-11]
