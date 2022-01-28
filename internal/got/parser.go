@@ -1,168 +1,271 @@
 package got
 
-import (
-	"fmt"
-	"html"
-	"strings"
-	"unicode/utf8"
-)
-
-var endedWithNewline = true
-
-type ast struct {
-	item  tokenItem
-	items []ast
+type parser struct {
+	lexer *lexer
 }
 
-func Parse(l *lexer) string {
-	item := tokenItem{typ: itemGo}
-	return parseItem(l, item)
+func parse(l *lexer) tokenItem {
+	p := parser{lexer:l}
+	topItem := tokenItem{typ: itemGo}
+	var endItem tokenItem
+	topItem.childItems, endItem = p.parseRun()
+	// if we have an error, extract all the errors from the channel and combine them
+	if endItem.typ == itemError {
+		for item := range p.lexer.items {
+			if item.typ == itemError {
+				endItem.val += "\n" + item.val
+			}
+		}
+		return endItem
+	}
+	return topItem
 }
 
+func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
+	for item := range p.lexer.items {
+		switch item.typ {
+		case itemEOF:
+			endItem = item
+			return
 
-// Process the template items coming from the lexer and return the whole thing as a string
-func parseItem(l *lexer, parent tokenItem) string {
-	var ret string
+		case itemError:
+			endItem = item
+			return
 
-	for  {
-		item := l.nextItem()
-		if item.typ == itemEOF {
-			endedWithNewline = true // prepare for next file
-			return ret
-		}
-		if item.typ == itemEnd || item.typ == itemIgnore {
-			return ret
-		}
+		case itemRun:
+			subItems = append(subItems, item)
 
-		if item.typ == itemError {
-			fmt.Println(item.val)
-			return ""
-		} else if item.typ == itemRun {
-			var out string
-			out, endedWithNewline = outputRun(parent, item, endedWithNewline)
-			ret += out
-		} else {
-			ret += parseItem(l, item)
+		case itemStrictBlock:
+			subItems = append(subItems, item)
+
+		case itemEnd:
+			endItem = item
+			return
+
+		case itemText:fallthrough
+		case itemGo:
+			item.childItems, endItem = p.parseRun()
+			if endItem.typ != itemEnd {
+				return
+			}
+			subItems = append(subItems, item)
+
+		case itemString: fallthrough
+		case itemBool: fallthrough
+		case itemInt: fallthrough
+		case itemUInt: fallthrough
+		case itemFloat: fallthrough
+		case itemInterface: fallthrough
+		case itemBytes:
+			item2 := p.parseValue(item)
+			if item2.typ == itemError {
+				endItem = item2
+				return
+			}
+			subItems = append(subItems, item2)
+
+		case itemIf:
+			ifItems := p.parseIf(item)
+			if len(ifItems) > 0 {
+				if ifItems[0].typ == itemError {
+					endItem = ifItems[0]
+					return
+				}
+				// push the if items down to the childItems of overriding if item
+				ifItem := tokenItem{typ: itemIf, childItems: ifItems}
+				subItems = append(subItems, ifItem)
+			}
+
+		case itemJoin:
+			item2 := p.parseJoin(item)
+			if item2.typ == itemError {
+				endItem = item2
+				return
+			}
+			subItems = append(subItems, item2)
+		default:
+			panic("unexpected item " + item.typ.String()) // this is a programming bug, not a template error
 		}
 	}
-	return ret
+	return
 }
 
-func outputRun(parent tokenItem, item tokenItem, prevTextEndedWithNewline bool) (string, bool) {
-	switch parent.typ {
-	case itemGo:
-		return outputGo(item.val, parent.withError), prevTextEndedWithNewline // straight go code
+func (p *parser) parseValue(item tokenItem) tokenItem {
+	runItem := <- p.lexer.items
+	switch runItem.typ {
+	case itemRun:
+		item.val = runItem.val
+	case itemEnd:
+		item.typ = itemError
+		item.val = "missing value"
+		return item
+	case itemEOF:
+		item.typ = itemError
+		item.val = "unexpected end of file"
+		return item
+	case itemError:
+		return runItem
+	default:
+		panic("unexpected item inside a value block") // this is programming but, not a template error
+	}
 
-	case itemText: fallthrough
-	case itemStrictBlock:
-		r,_ := utf8.DecodeLastRuneInString(item.val)
-		thisEndedWithNewline := r == '\n'
+	endItem := <- p.lexer.items
+	switch endItem.typ {
+	case itemEnd:
+	return item // correctly terminated a value
+	case itemEOF:
+		item.typ = itemError
+		item.val = "unexpected end of file"
+		return item
+	case itemError:
+		return endItem
+	default:
+		item.typ = itemError
+		item.val = "unexpected text inside a value definition"
+		return item
+	}
+}
 
-		if !prevTextEndedWithNewline && item.newline {
-			item.val = "\n" + item.val
+func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
+	if item.typ != itemElse {
+		conditionItem := <-p.lexer.items
+		switch conditionItem.typ {
+		case itemRun:
+			item.val = conditionItem.val
+		case itemEnd:
+			item.typ = itemError
+			item.val = "missing condition in if statement"
+			return []tokenItem{item}
+		case itemEOF:
+			item.typ = itemError
+			item.val = "unexpected end of file"
+			return []tokenItem{item}
+		case itemError:
+			return []tokenItem{conditionItem}
+		default:
+			item.typ = itemError
+			item.val = "unexpected text inside a value definition"
+			return []tokenItem{item}
 		}
-		return outputText(parent, item.val), thisEndedWithNewline
 
-	case itemHtml:
-		return outputHtml(parent, item.val, item.htmlBreaks), false
+		endItem := <-p.lexer.items
+		switch endItem.typ {
+		case itemEnd:
+			// correctly terminated a value, so keep going
+		case itemEOF:
+			item.typ = itemError
+			item.val = "unexpected end of file"
+			return []tokenItem{item}
+		case itemError:
+			return []tokenItem{endItem}
+		default:
+			item.typ = itemError
+			item.val = "unexpected text inside an if statement"
+			return []tokenItem{item}
+		}
+	}
+
+	var endItem tokenItem
+
+	// get the items inside the if statement
+	item.childItems, endItem = p.parseRun()
+
+	switch endItem.typ {
+	case itemEnd:
+		// correctly terminated a value, so keep going
+	case itemEOF:
+		item.typ = itemError
+		item.val = "unexpected end of file"
+		return []tokenItem{item}
+	case itemError:
+		return []tokenItem{endItem}
+	default:
+		item.typ = itemError
+		item.val = "unexpected text inside an if statement"
+		return []tokenItem{item}
+	}
+
+	switch endItem.val {
+	case "if":
+		// terminated the if statement
+		return []tokenItem{item}
+	case "else":
+		if item.typ == itemElse {
+			// cannot place an else after an else
+			item.typ = itemError
+			item.val = "cannot put an else after another else"
+			return []tokenItem{item}
+		}
+		elseItem := tokenItem{typ: itemElse}
+		items3 := p.parseIf(elseItem)
+		if len(items3) > 0 {
+			switch items3[0].typ {
+			case itemError:
+				return []tokenItem{items3[0]}
+			case itemEOF:
+				item.typ = itemError
+				item.val = "unexpected end of file"
+				return []tokenItem{item}
+			}
+		}
+		items = append(items, item)
+		items = append(items, items3...)
+		return
+
+	case "elseif":
+		if item.typ == itemElse {
+			// cannot place an else after an else
+			item.typ = itemError
+			item.val = "cannot put an elseif after an else"
+			return []tokenItem{item}
+		}
+		elseIfItem := tokenItem{typ: itemElseIf}
+		items3 := p.parseIf(elseIfItem)
+		if len(items3) > 0 {
+			switch items3[0].typ {
+			case itemError:
+				return []tokenItem{items3[0]}
+			case itemEOF:
+				item.typ = itemError
+				item.val = "unexpected end of file"
+				return []tokenItem{item}
+			}
+		}
+		items = append(items, item)
+		items = append(items, items3...)
+		return
 
 	default:
-		return outputValue(parent, item.val), false
-
+		item.typ = itemError
+		item.val = "unexpected end block item"
+		return []tokenItem{item}
 	}
 }
 
-func outputGo(code string, withErr bool) string {
-	if withErr {
-		return fmt.Sprintf(
-			"\n{\n err := %s\n"+
-				"if err != nil { return err}\n}\n", code)
-	} else {
-		return code
+func (p *parser) parseJoin(item tokenItem) tokenItem {
+	sliceItem := <-p.lexer.items
+	connectorItem := <-p.lexer.items
+
+	if sliceItem.typ != itemParam || connectorItem.typ != itemParam {
+		item.typ = itemError
+		item.val = "expected parameter of join statement"
+		return item
 	}
+	item.params = make(map[string]tokenItem)
+	item.params["slice"] = sliceItem
+	item.params["joinString"] = connectorItem
+	endItem := <-p.lexer.items
+	if endItem.typ != itemEnd {
+		endItem.typ = itemError
+		endItem.val = "expected end of join statement"
+		return endItem
+	}
+	item.childItems, endItem = p.parseRun()
+	if endItem.typ != itemEnd  || endItem.val != "join"{
+		endItem.typ = itemError
+		endItem.val = "expected ending join tag"
+		return endItem
+	}
+	return item
 }
 
-func outputValue(item tokenItem, val string) string {
-	writer := "buf.WriteString(%s)"
-
-	if item.htmlBreaks { // assume escaped too
-		writer = `buf.WriteString(strings.Replace(html.EscapeString(%s), "\n", "<br>\n", -1))`
-	} else if item.escaped {
-		writer = "buf.WriteString(html.EscapeString(%s))"
-	}
-
-	var formatter string
-
-	switch item.typ {
-	case itemBool:
-		formatter = "strconv.FormatBool(%s)"
-	case itemInt:
-		formatter = "strconv.Itoa(%s)"
-	case itemUInt:
-		formatter = "strconv.FormatUint(uint64(%s), 10)"
-	case itemInterface:
-		formatter = "fmt.Sprint(%s)"
-	case itemFloat:
-		formatter = "strconv.FormatFloat(float64(%s), 'g', -1, 64)"
-	case itemBytes:
-		formatter = "string(%s[:])"
-	default:
-		formatter = "%s"
-	}
-
-	if item.withError {
-		return fmt.Sprintf(
-			"\n{\nv, err := %s\n"+
-				"%s\n"+
-				"if err != nil { return err}\n}\n", val,
-			fmt.Sprintf(writer, fmt.Sprintf(formatter, "v")))
-	} else {
-		return fmt.Sprintf("\n%s\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, val)))
-	}
-
-}
-
-// outputText sends plain text to the template. There are some nuances here.
-// The val includes the space character that comes after the opening tag. We may
-// or may not use that character, depending on the circumstances.
-func outputText(item tokenItem, val string) string {
-	if val == "" {
-		return ""
-	}
-
-	if item.escaped {
-		val = html.EscapeString(val)
-	}
-	if item.translate {
-		return "\nt.Translate(" + quoteText(val) + ", buf)\n"
-	} else {
-		return "\nbuf.WriteString(" + quoteText(val) + ")\n"
-	}
-}
-
-// Convert text to html
-func outputHtml(item tokenItem, val string, htmlNewlines bool) string {
-	val = html.EscapeString(val)
-	if htmlNewlines {
-		val = strings.Replace(val, "\r\n", "\n", -1)
-		val = strings.Replace(val, "\n\n", "</p><p>", -1)
-		val = strings.Replace(val, "\n", "<br>\n", -1)
-		val = strings.Replace(val, "</p><p>", "</p>\n<p>", -1) // pretty print it so its inspectable
-
-		val = "<p>" + val + "</p>\n"
-	}
-
-	if item.translate {
-		return "\nt.Translate(buf, " + quoteText(val) + ")\n"
-	} else  {
-		return "\nbuf.WriteString(" + quoteText(val) + ")\n"
-	}
-
-}
-
-// Generally speaking, text is quoted with a backtick character. However, there is a special case. If the text actually
-// contains a backtick character, we cannot use backticks to quote them, but rather double-quotes. This function prepares
-// text, looking for these backticks, and then returns a golang quoted text that can be suitably used in all situations.
-func quoteText(val string) string {
-	return "`" + strings.Replace(val, "`", "` + \"`\" + `", -1) + "`"
-}

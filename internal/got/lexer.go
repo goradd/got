@@ -100,6 +100,27 @@ func lexRun(l *lexer)  stateFn {
 	}
 }
 
+func lexParams(l *lexer)  stateFn {
+	l.ignoreSpace()
+
+	l.acceptRun()
+	if !l.isAtCloseTag() {
+		l.emitError("expected closing tag")
+		return nil
+	}
+
+	paramString := l.currentString()
+	params,err := splitParams(paramString)
+	if err != nil {
+		l.emitError(err.Error())
+		return nil
+	}
+	for _,p := range params {
+		l.emit(tokenItem{typ:itemParam, val: p})
+	}
+	return lexRun
+}
+
 
 // We are pointing to the start of an unknown tag
 func lexTag(l *lexer)  stateFn {
@@ -148,20 +169,17 @@ func lexTag(l *lexer)  stateFn {
 		return l.lexSubstitute()
 
 	case itemStrictBlock:
-		l.emit(i)
-		newline := isEndOfLine(l.peek())
-		l.ignoreOneSpace()
-		return l.lexStrictBlock(newline)
-
+		return l.lexStrictBlock()
 
 	case itemComment:
 		return l.lexComment()
 
 	case itemText:
-		l.emit(i)
 		newline := isEndOfLine(l.peek())
 		l.ignoreOneSpace()
-		return l.lexText(newline)
+		i.newline = newline
+		l.emit(i)
+		return lexRun
 
 	case itemJoin:
 		return l.lexJoin()
@@ -170,7 +188,6 @@ func lexTag(l *lexer)  stateFn {
 		l.emit(i)
 		l.ignoreWhiteSpace()
 		return lexRun
-
 	}
 }
 
@@ -200,8 +217,9 @@ func (l *lexer) emitRun() {
 	}
 }
 
-func (l *lexer) lexStrictBlock(newline bool) stateFn {
-	l.ignore()
+func (l *lexer) lexStrictBlock() stateFn {
+	newline := isEndOfLine(l.peek())
+	l.ignoreOneSpace()
 	l.acceptRun()
 	endToken := l.currentString()
 	if !l.isAtCloseTag() {
@@ -215,9 +233,8 @@ func (l *lexer) lexStrictBlock(newline bool) stateFn {
 		l.emitError("no strict end block found")
 		return nil
 	}
-	l.emit(tokenItem{typ: itemRun, newline:newline})
+	l.emit(tokenItem{typ: itemStrictBlock, newline:newline})
 	l.ignoreN(len(endToken))
-	l.emitType(itemEnd)
 	return lexRun
 }
 
@@ -278,13 +295,12 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 	if htmlBreaks || escaped {
 		// treat file like a text file
 		l.ignore()
-		l.emitType(itemHtml)
 		b, err := os.ReadFile(foundPath)
 		if err != nil {
 			l.emitError("error opening include file %s", foundPath)
 			return nil
 		}
-		l.emit(tokenItem{typ: itemString, escaped: escaped, withError: false, htmlBreaks: htmlBreaks})
+		l.emit(tokenItem{typ: itemText, escaped: escaped, withError: false, htmlBreaks: htmlBreaks})
 		l.emit(tokenItem{typ: itemRun, val: string(b)})
 		l.emitType(itemEnd)
 		return lexRun
@@ -349,16 +365,18 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 		return nil
 	}
 
-	if _, ok := tokens["{{"+name]; ok {
+	if _, ok := tokens["{{" + name]; ok {
 		l.emitError("block name cannot be a tag name. Block name: %s", name)
 		return nil
 	}
 
-	l.acceptUntil(tokEndBlock)
-	if !l.isAt(tokEndBlock) {
+	endBlock := "{{" + name + "}}"
+
+	l.acceptUntil(endBlock)
+	if !l.isAt(endBlock) {
 		l.emitError("no end block found")
 	}
-	l.ignoreN(len(tokEndBlock))
+	l.ignoreN(len(endBlock))
 	if err := addNamedBlock(name, l.currentString(), paramCount); err != nil {
 		l.emitError(err.Error())
 		return nil
@@ -435,6 +453,7 @@ func processParams(name string, in namedBlockEntry, params []string) (out string
 	return
 }
 
+// TODO: Test empty params
 func splitParams(paramString string) (params []string, err error) {
 	var currentItem string
 
@@ -494,43 +513,12 @@ func (l *lexer) lexComment() stateFn {
 
 
 func (l *lexer) lexJoin() stateFn {
-	l.ignoreSpace()
-
 	if l.isAtCloseTag() { // this is a closing join tag
-		l.emitType(itemJoin)
-		l.emitType(itemEnd)
+		l.ignoreCloseTag()
+		l.emit(tokenItem{typ:itemEndBlock, val: "join"})
 		return lexRun
 	}
-	l.acceptRun()
-	if !l.isAtCloseTag() { // this is a closing join tag
-		l.emitError("expected closing tag")
-		return nil
-	}
-
-	paramString := l.currentString()
-
-	params,err := splitParams(paramString)
-	if err != nil {
-		l.emitError(err.Error())
-		return nil
-	}
-	l.ignore()
-	for _,p := range params {
-		l.emit(tokenItem{typ: itemParam, val: p})
-	}
-	l.emitType(itemEnd)
-	l.ignoreCloseTag()
-	return lexRun
-}
-
-func (l *lexer) lexText(newline bool) stateFn {
-
-	if !l.isAtCloseTag() {
-		l.acceptRun()
-		l.emit(tokenItem{typ: itemRun, newline:newline})
-	}
-
-	return lexRun
+	return lexParams
 }
 
 // isSpace reports whether r is a space character.
@@ -550,7 +538,7 @@ func isEndOfLine(r rune) bool {
 
 // isTagChar reports whether the character is allowed in a tag. Helps us find the end of a tag.
 func isTagChar(r rune) bool {
-	if r == '}' || isWhiteSpace(r) {
+	if isWhiteSpace(r) {
 		return false
 	} else {
 		return true

@@ -8,7 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[itemIgnore-0]
+	_ = x[itemEOF-0]
 	_ = x[itemError-1]
 	_ = x[itemStrictBlock-2]
 	_ = x[itemNamedBlock-3]
@@ -16,28 +16,26 @@ func _() {
 	_ = x[itemSubstitute-5]
 	_ = x[itemInclude-6]
 	_ = x[itemEnd-7]
-	_ = x[itemHtml-8]
-	_ = x[itemGo-9]
-	_ = x[itemText-10]
-	_ = x[itemRun-11]
-	_ = x[itemString-12]
-	_ = x[itemBool-13]
-	_ = x[itemInt-14]
-	_ = x[itemUInt-15]
-	_ = x[itemFloat-16]
-	_ = x[itemInterface-17]
-	_ = x[itemBytes-18]
-	_ = x[itemComment-19]
-	_ = x[itemEOF-20]
-	_ = x[itemBackup-21]
-	_ = x[itemIf-22]
-	_ = x[itemElse-23]
-	_ = x[itemFor-24]
+	_ = x[itemGo-8]
+	_ = x[itemText-9]
+	_ = x[itemRun-10]
+	_ = x[itemString-11]
+	_ = x[itemBool-12]
+	_ = x[itemInt-13]
+	_ = x[itemUInt-14]
+	_ = x[itemFloat-15]
+	_ = x[itemInterface-16]
+	_ = x[itemBytes-17]
+	_ = x[itemComment-18]
+	_ = x[itemIf-19]
+	_ = x[itemFor-20]
+	_ = x[itemJoin-21]
+	_ = x[itemParam-22]
 }
 
-const _tokenType_name = "itemIgnoreitemErroritemStrictBlockitemNamedBlockitemEndBlockitemSubstituteitemIncludeitemEnditemConvertitemGoitemTextitemRunitemStringitemBoolitemIntitemUIntitemFloatitemInterfaceitemBytesitemCommentitemEOFitemBackupitemIfitemElseitemFor"
+const _tokenType_name = "itemEOFitemErroritemStrictBlockitemNamedBlockitemEndBlockitemSubstituteitemIncludeitemEnditemGoitemTextitemRunitemStringitemBoolitemIntitemUIntitemFloatitemInterfaceitemBytesitemCommentitemIfitemForitemJoinitemParam"
 
-var _tokenType_index = [...]uint8{0, 10, 19, 34, 48, 60, 74, 85, 92, 103, 109, 117, 124, 134, 142, 149, 157, 166, 179, 188, 199, 206, 216, 222, 230, 237}
+var _tokenType_index = [...]uint8{0, 7, 16, 31, 45, 57, 71, 82, 89, 95, 103, 110, 120, 128, 135, 143, 152, 165, 174, 185, 191, 198, 206, 215}
 
 func (i tokenType) String() string {
 	if i < 0 || i >= tokenType(len(_tokenType_index)-1) {

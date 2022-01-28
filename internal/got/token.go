@@ -18,6 +18,8 @@ type tokenItem struct {
 	blockName  string
 	lineNum	   int
 	runeNum	   int
+	childItems []tokenItem // Filled in during the parsing step to build the ast
+	params map[string]tokenItem // Filled in during the parsing step to build the ast
 }
 
 const (
@@ -28,7 +30,7 @@ const (
 )
 
 const (
-	itemIgnore tokenType = iota
+	itemEOF tokenType = iota	// 0 so that its the default after the channel is closed
 	itemError
 	itemStrictBlock
 	itemNamedBlock
@@ -37,12 +39,10 @@ const (
 	itemInclude    // immediately includes another file during lexing
 
 	itemEnd
-	itemHtml
 	itemGo
 	itemText
 
 	itemRun // A run of text
-	itemParam // an item in a parameter list
 
 	itemString
 	itemBool
@@ -53,13 +53,14 @@ const (
 	itemBytes
 
 	itemComment
-	itemEOF
 
 	itemIf
-	itemElse
+	itemElse  	// only used by parser
+	itemElseIf	// only used by parser
 	itemFor
 
 	itemJoin
+	itemParam
 )
 
 var tokens map[string]tokenItem
@@ -126,9 +127,8 @@ func init() {
 	tokens["{{"] = tokenItem{typ: itemText, escaped: false, withError: false}
 	tokens["{{!"] = tokenItem{typ: itemText, escaped: true, withError: false}
 	tokens["{{esc"] = tokenItem{typ: itemText, escaped: true, withError: false}
-
-	tokens["{{h"] = tokenItem{typ: itemHtml}
-	tokens["{{html"] = tokenItem{typ: itemHtml}
+	tokens["{{h"] = tokenItem{typ: itemText, escaped: true, htmlBreaks: true}
+	tokens["{{html"] = tokenItem{typ: itemText, escaped: true, htmlBreaks: true}
 
 	// go code straight pass through
 	tokens["{{g"] = tokenItem{typ: itemGo}
@@ -137,7 +137,6 @@ func init() {
 	tokens["{{err"] = tokenItem{typ: itemGo, withError: true}
 
 	tokens["{{begin"] = tokenItem{typ: itemStrictBlock}
-	tokens["{{end}}"] = tokenItem{typ: itemEndBlock}
 	tokens["{{define"] = tokenItem{typ: itemNamedBlock} // must follow with a name and a close tag
 	tokens["{{<"] = tokenItem{typ: itemNamedBlock}      // must follow with a name and a close tag
 
@@ -158,12 +157,15 @@ func init() {
 
 
 	tokens["{{if"] = tokenItem{typ: itemIf} // Outputs a go "if" statement
-	tokens["{{else"] = tokenItem{typ: itemElse}
+	tokens["{{if}}"] = tokenItem{typ: itemEnd, val: "if"}
+	tokens["{{elseif"] = tokenItem{typ: itemEnd, val: "elseif"}
+	tokens["{{else}}"] = tokenItem{typ: itemEnd, val: "else"}
 
 	tokens["{{for"] = tokenItem{typ: itemFor} // Outputs a go "for" statement
+	tokens["{{for}}"] = tokenItem{typ: itemEnd, val:"for"}
 
 	tokens["{{join"] = tokenItem{typ: itemJoin} // Like a string.Join statement
-
+	tokens["{{join}}"] = tokenItem{typ: itemEnd, val:"join"}
 
 	tokens["}}"] = tokenItem{typ: itemEnd} // need to check this for white space BEFORE instead of after.
 }

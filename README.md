@@ -297,7 +297,7 @@ func Tester(s string) (out string, err error) {
 }
 
 func OutTemplate(toPrint string, buf bytes.Buffer) error {
-{{=e Tester(toPrint) )}
+{{=e Tester(toPrint) }}
 }
 ```
 
@@ -324,7 +324,7 @@ Example: `{{: "myTemplate.inc" }}`
 Use `{{:!` to include a file that you surround with a `<pre>` tag to include a text file
 and have it appear in an html document looking the same. Use `{{:h` to include a file
 without the `<pre>` tags, but if the file uses extra spaces for indent, those spaces will
-not indent in the html.
+not indent in the html. These kinds of include files will not be searched for GoT commands.
  
 ### Defined Fragments
 
@@ -348,7 +348,7 @@ param1, param2, ... are optional parameters that will be substituted for $1, $2,
 If a parameter is not included when using a fragment, an empty value will be substituted for the parameter in the fragment.
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
-`{{end}}` tag. The end tag must be just like that, with no spaces inside the tag.
+`{{fragName}}` tag. The end tag must be just like that, with no spaces inside the tag.
 
 The following fragments are predefined:
 * `{{templatePath}}` will result in the full path of the template file being processed
@@ -401,7 +401,7 @@ These tags and anything enclosed in them is removed from the compiled template.
     
     {{if <go condition>}}<block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
     {{if <go condition>}}<block>{{else}}<block>{{if}}                      Go "if" and "else" statement.
-    {{if <go condition>}}<block>{{else if <go condition>}}<block>{{if}}    Go "if" and "else if" statement.
+    {{if <go condition>}}<block>{{elseif <go condition>}}<block>{{if}}    Go "if" and "else if" statement.
     {{for <go condition>}}<block>{{for}}                                   This is a convenience tag for surrounding text with a go "for" statement.
 
 These tags are substitutes for switching into GO mode and using a `for` or `if` statement. 
@@ -420,8 +420,8 @@ These tags are substitutes for switching into GO mode and using a `for` or `if` 
     {{join <slice>, <string>}}<block>{{join}}    Joins the items of a slice with a string.
 
 Join will execute the <block> for each item of <slice>. Within <block> the variable
-"_i" will be an integer representing the index of the slic item, and "_j" will be the
-item itself. <block> should include GoT commands to output text. <string> will be output
+"_i" will be an integer representing the index of the slice item, and "_j" will be the
+item itself. <block> starts in text mode, but you can put GoT commands in it. <string> will be output
 between the output of each item, creating an effect similar to joining a slice of strings.
 
 
@@ -553,3 +553,10 @@ GoT was influenced by:
 - [hero](https://github.com/shiyanhui/hero)
 - [fasttemplate](https://github.com/valyala/fasttemplate)
 - [Rob Pike's Lexing/Parsing Talk](https://www.youtube.com/watch?v=HxaD_trXwRE)
+
+## Syntax Changes
+
+###v0.10.0
+This was a major rewrite with the following changes:
+- defined fragments end with {{fragName}} tags, rather than {{end}} tags
+- {{else if ...}} is now {{elseif ...}}
