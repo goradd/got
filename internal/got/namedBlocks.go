@@ -10,7 +10,7 @@ var namedBlocks = make(map[string]namedBlockEntry)
 
 func addNamedBlock (name string, text string, paramCount int) error {
 	if _,ok := namedBlocks[name]; ok {
-		return fmt.Errorf("named block %s has already been defined")
+		return fmt.Errorf("named block %s has already been defined", name)
 	}
 	namedBlocks[name] = namedBlockEntry{text, paramCount}
 	return nil

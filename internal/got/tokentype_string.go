@@ -28,14 +28,16 @@ func _() {
 	_ = x[itemBytes-17]
 	_ = x[itemComment-18]
 	_ = x[itemIf-19]
-	_ = x[itemFor-20]
-	_ = x[itemJoin-21]
-	_ = x[itemParam-22]
+	_ = x[itemElse-20]
+	_ = x[itemElseIf-21]
+	_ = x[itemFor-22]
+	_ = x[itemJoin-23]
+	_ = x[itemParam-24]
 }
 
-const _tokenType_name = "itemEOFitemErroritemStrictBlockitemNamedBlockitemEndBlockitemSubstituteitemIncludeitemEnditemGoitemTextitemRunitemStringitemBoolitemIntitemUIntitemFloatitemInterfaceitemBytesitemCommentitemIfitemForitemJoinitemParam"
+const _tokenType_name = "itemEOFitemErroritemStrictBlockitemNamedBlockitemEndBlockitemSubstituteitemIncludeitemEnditemGoitemTextitemRunitemStringitemBoolitemIntitemUIntitemFloatitemInterfaceitemBytesitemCommentitemIfitemElseitemElseIfitemForitemJoinitemParam"
 
-var _tokenType_index = [...]uint8{0, 7, 16, 31, 45, 57, 71, 82, 89, 95, 103, 110, 120, 128, 135, 143, 152, 165, 174, 185, 191, 198, 206, 215}
+var _tokenType_index = [...]uint8{0, 7, 16, 31, 45, 57, 71, 82, 89, 95, 103, 110, 120, 128, 135, 143, 152, 165, 174, 185, 191, 199, 209, 216, 224, 233}
 
 func (i tokenType) String() string {
 	if i < 0 || i >= tokenType(len(_tokenType_index)-1) {
