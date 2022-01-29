@@ -346,9 +346,10 @@ If you attempt to use a fragment that was not previously defined, GoT will panic
 
 param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
 If a parameter is not included when using a fragment, an empty value will be substituted for the parameter in the fragment.
+Use commas to separate parameters, including empty parameters.
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
-`{{fragName}}` tag. The end tag must be just like that, with no spaces inside the tag.
+`{{end fragName}}` tag. The end tag must be just like that, with no spaces after the fragName.
 
 The following fragments are predefined:
 * `{{templatePath}}` will result in the full path of the template file being processed
@@ -366,16 +367,16 @@ levels of includes will return the information for the top level file being proc
 <p>
 This is my html body.
 </p>
-{{end}}
+{{end hFrag}}
 
 {{< writeMe 2}}
 {{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
 {{g 
-if $2 {
+if "$2" != "" {
 	buf.WriteString("$1")
 }
 }}
-{{end}}
+{{end writeMe}}
 
 
 func OutTemplate(buf bytes.Buffer) {
@@ -387,7 +388,8 @@ func OutTemplate(buf bytes.Buffer) {
 	</html>
 }}
 
-{{writeMe "Help Me!", true}}
+{{writeMe "Help Me!", a}}
+{{writeMe "Help Me!", }}
 }
 ```
 
@@ -446,13 +448,16 @@ you can use:
     {{begin *endTag*}} Starts a strict text block and turns off the got parser. 
     
 One thing this is useful for is to use Got to generate Got code.
-End the block with a `{{*endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. The following
-example will output the entire second line of code with no changes, including all brackets:
+End the block with a `{{end *endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. 
+There can be no space between the endTag and the final brackets
+The following example will output the entire second line of code with no changes, 
+including all brackets:
 
 ```
 {{begin mystrict}}
-{{! This is verbatim code }}{{< not included}}
-{{mystrict}}
+{{! This is verbatim code }}
+{{< all included}}
+{{end mystrict}}
 ```
 
 ## Bigger Example

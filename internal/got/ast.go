@@ -20,11 +20,11 @@ type  astWalker struct {
 	translate bool
 }
 
-func buildAst(inFile string) (ret astType, err error) {
-	l := lexFile(inFile)
+func buildAst(inFile string) (ret astType, l *lexer, err error) {
+	l = lexFile(inFile)
 	ret.topItem = parse(l)
 	if ret.topItem.typ == itemError {
-		return ret, fmt.Errorf(ret.topItem.val)
+		err = fmt.Errorf(ret.topItem.val)
 	}
 	return
 }

@@ -14,8 +14,8 @@ import (
 	"text/scanner"
 )
 
-const eof = -1
-const errRune = -2
+const eof rune = -1
+const errRune rune = -2
 
 type lexer struct {
 	fileName  string         // file name being scanned
@@ -26,7 +26,8 @@ type lexer struct {
 	lineNum   int			 // line number at start of curBuffer
 	lineRuneNum int			 // the char num on the line at start of curBuffer
 	backBuffer []rune		 // items that were put back into the lexer after a peek
-	relativePaths []string // when including files, keeps track of the relative paths to search
+	relativePaths []string   // when including files, keeps track of the relative paths to search
+	namedBlocks map[string]namedBlockEntry
 	err error	// most recent error
 }
 
@@ -68,12 +69,10 @@ func lexBlock(blockName string, content string) *lexer {
 	return l
 }
 
+
 func (l *lexer) run() {
 	for state := lexStart; state != nil; {
 		state = state(l)
-	}
-	if l.err == nil {
-		l.emitType(itemEOF)
 	}
 	close(l.items)
 }
@@ -127,8 +126,7 @@ func lexTag(l *lexer)  stateFn {
 	a := l.acceptTag()
 
 	if a == "" {
-		l.emitError("expected a tag, but no tag was found")
-		return nil
+		panic("expected a tag but no tag found") // a programming error if this happens
 	}
 
 	var i tokenItem
@@ -140,9 +138,12 @@ func lexTag(l *lexer)  stateFn {
 		// - A compressed "interface" tag of the form: {{SomeGoCodeWithValue}}, which will be somewhat similar to the built-in go template engine
 
 		tagName := a[2:]
+		if len(tagName)>2 && tagName[len(tagName)-2:] == "}}" {
+			tagName = tagName[:len(tagName)-2]
+		}
 		// if a recognized custom tag, we need to lex it
-		if _, ok = getNamedBlock(tagName); ok {
-			// its a defined block, so reset to the name of the block
+		if _, ok = l.getNamedBlock(tagName); ok {
+			// it's a defined block, so reset to the name of the block
 			l.putBackCurBuffer()
 			l.next()
 			l.next()
@@ -227,7 +228,7 @@ func (l *lexer) lexStrictBlock() stateFn {
 		return nil
 	}
 	l.ignoreCloseTag()
-	endToken = "{{" + endToken + "}}"
+	endToken = "{{end " + endToken + "}}"
 	l.acceptUntil(endToken)
 	if !l.isAt(endToken) {
 		l.emitError("no strict end block found")
@@ -370,30 +371,38 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 		return nil
 	}
 
-	endBlock := "{{" + name + "}}"
+	endBlock := "{{end " + name + "}}"
 
 	l.acceptUntil(endBlock)
 	if !l.isAt(endBlock) {
 		l.emitError("no end block found")
 	}
-	l.ignoreN(len(endBlock))
-	if err := addNamedBlock(name, l.currentString(), paramCount); err != nil {
+	if err := l.addNamedBlock(name, l.currentString(), paramCount); err != nil {
 		l.emitError(err.Error())
 		return nil
 	}
+	l.ignoreN(len(endBlock))
+
 	return lexRun
 }
 
 func (l *lexer) lexSubstitute() stateFn {
 	l.ignoreSpace()
-	l.acceptTag()
+	l.acceptUntil1(" \t}{")
 	name := l.currentString()
+
+	if name == "" {
+		l.emitError("expected block name, but got empty value")
+		return nil
+	}
+
 	l.ignoreSpace()
 	l.acceptRun()
 	paramString := strings.TrimSpace(l.currentString())
 
 	if !l.isAtCloseTag() {
-		l.emitError("looking for close tag, found %s", l.peekN(2))
+		l.emitError("expected close tag")
+		return nil
 	}
 
 	l.ignoreCloseTag()
@@ -402,7 +411,7 @@ func (l *lexer) lexSubstitute() stateFn {
 	var ok bool
 	var processedBlock string
 
-	if block, ok = getNamedBlock(name); !ok {
+	if block, ok = l.getNamedBlock(name); !ok {
 		l.emitError("named block not found: %s", name)
 		return nil
 	}
@@ -436,18 +445,21 @@ func processParams(name string, in namedBlockEntry, params []string) (out string
 
 	var i int
 	var s string
-	for i, s = range params {
-		if i >= in.paramCount {
-			err = fmt.Errorf("too many parameters given for named block %s", name)
-		}
-		search := fmt.Sprintf("$%d", i+1)
-		out = strings.Replace(out, search, s, -1)
+
+	if len(params) == 1 &&
+		params[0] == "" &&
+		in.paramCount == 0 {
+		out = in.text
+		return
+	}
+	if len(params) !=  in.paramCount {
+		err = fmt.Errorf("unexpected number of parameters given: expected %d, got %d", in.paramCount, len(params))
+		return
 	}
 
-	for ; i < in.paramCount; i++ {
-		// missing parameters will get an empty value
+	for i, s = range params {
 		search := fmt.Sprintf("$%d", i+1)
-		out = strings.Replace(out, search, "", -1)
+		out = strings.Replace(out, search, s, -1)
 	}
 
 	return
@@ -469,16 +481,16 @@ func splitParams(paramString string) (params []string, err error) {
 			currentItem = strings.TrimSpace(currentItem)
 			if currentItem != "" {
 				if currentItem[0] == '"' {
-					if len(currentItem) > 1 && currentItem[len(currentItem) - 1] == '"' {
-						//currentItem = currentItem[1 : len(currentItem)-1]
-						currentItem,err = strconv.Unquote(currentItem)
-					} else {
-						err = fmt.Errorf("parameter has a beginning quote with no ending quote: %s", currentItem)
+					currentItem,err = strconv.Unquote(currentItem)
+					if err != nil {
 						return
 					}
 				}
 				params = append(params, currentItem)
 				currentItem = ""
+			} else {
+				// insert a blank item
+				params = append(params, currentItem)
 			}
 		} else {
 			currentItem += text
@@ -486,16 +498,16 @@ func splitParams(paramString string) (params []string, err error) {
 	}
 	if currentItem != "" {
 		if currentItem[0] == '"' {
-
-			if len(currentItem) > 1 && currentItem[len(currentItem) - 1] == '"' {
-				currentItem,err = strconv.Unquote(currentItem)
-			} else {
-				err = fmt.Errorf("parameter has a beginning quote with no ending quote: %s", currentItem)
+			currentItem,err = strconv.Unquote(currentItem)
+			if err != nil {
 				return
 			}
 		}
 		params = append(params, currentItem)
+	} else {
+		params = append(params, currentItem)
 	}
+
 	return
 }
 
@@ -513,12 +525,21 @@ func (l *lexer) lexComment() stateFn {
 
 
 func (l *lexer) lexJoin() stateFn {
-	if l.isAtCloseTag() { // this is a closing join tag
-		l.ignoreCloseTag()
-		l.emit(tokenItem{typ:itemEndBlock, val: "join"})
-		return lexRun
-	}
+	l.emitType(itemJoin)
 	return lexParams
+}
+
+// emitError emits an error token and terminates the scan by passing
+// back a nil pointer that will be the next state, terminating l.nextItem.
+func (l *lexer) emitError(format string, args ...interface{}) {
+	line,pos := l.calcCurLineNum()
+	if l.blockName != "" {
+		s := fmt.Sprintf("*** Error at line %d, position %d of block %s: ", line, pos, l.blockName)
+		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
+	} else {
+		s := fmt.Sprintf("*** Error at line %d, position %d of file %s: ", line, pos, l.fileName)
+		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
+	}
 }
 
 // isSpace reports whether r is a space character.
@@ -538,7 +559,10 @@ func isEndOfLine(r rune) bool {
 
 // isTagChar reports whether the character is allowed in a tag. Helps us find the end of a tag.
 func isTagChar(r rune) bool {
-	if isWhiteSpace(r) {
+	if isWhiteSpace(r) ||
+		r == eof ||
+		r == errRune ||
+		r == '{' {
 		return false
 	} else {
 		return true
@@ -559,23 +583,10 @@ func (l *lexer) isAt(pattern string) bool {
 	return t == pattern
 }
 
-// emitError emits an error token and terminates the scan by passing
-// back a nil pointer that will be the next state, terminating l.nextItem.
-func (l *lexer) emitError(format string, args ...interface{}) {
-	line,pos := l.calcCurLineNum()
-	if l.blockName != "" {
-		s := fmt.Sprintf("*** Error at line %d, position %d of block %s: ", line, pos, l.blockName)
-		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
-	} else {
-		s := fmt.Sprintf("*** Error at line %d, position %d of file %s: ", line, pos, l.fileName)
-		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
-	}
-}
-
 // peek returns but does not consume the next rune in the input.
 func (l *lexer) peek() rune {
 	r := l.next()
-	if r != eof {
+	if r != eof  && r != errRune {
 		l.backup()
 	}
 	return r
@@ -598,26 +609,20 @@ func (l *lexer) peekN(n int) (ret string) {
 	return
 }
 
-// accept consumes the next rune if it's from the valid set.
-func (l *lexer) accept(valid string) bool {
-	if strings.IndexRune(valid, l.next()) >= 0 {
-		return true
-	}
-	l.backup()
-	return false
-}
 
 // acceptRun consumes a run of runes until it finds an open or close tag, or reaches eof
 func (l *lexer) acceptRun() {
 	var c rune
 	for !l.isAtOpenTag() &&
 		!l.isAtCloseTag() &&
-		c != eof {
+		c != eof &&
+		c != errRune {
 
 		c = l.next()
 	}
 }
 
+// acceptUntil will accept runes until it encounters the pattern, or eof or err
 func (l *lexer) acceptUntil(pattern string) {
 	for {
 		s := l.peekN(len(pattern))
@@ -639,28 +644,38 @@ func (l *lexer) acceptUntil1(terminators string) {
 	l.backup()
 }
 
+// acceptTag reads the beginning of a token and returns the token read
 func (l *lexer) acceptTag() (ret string) {
 	if !l.isAtOpenTag() {
 		return ""
 	}
-	l.next()
-	l.next()
+	ret += string(l.next())
+	ret += string(l.next())
+	var foundOne bool
 
 	for {
 		r := l.next()
-		if isTagChar(r) {
+		if r == '}' && foundOne {
+			// accept two contiguous closing chars as part of the tag, as long as there is a value
+			if l.peek() == '}' {
+				l.next()
+				ret += "}}"
+				return
+			} else {
+				// likely an error, but reject the closing bracket as part of the tag
+				l.backup()
+				return
+			}
+		} else if isTagChar(r) {
+			foundOne = true
 			ret += string(r)
 		} else {
-			l.backup()
+			if r != eof && r != errRune {
+				l.backup()
+			}
 			return ret
 		}
 	}
-}
-
-func (l *lexer) acceptSpace() {
-	for isSpace(l.next()) {
-	}
-	l.backup()
 }
 
 
@@ -687,15 +702,6 @@ func (l *lexer) next() rune {
 	return c
 }
 
-func (l *lexer) nextLine() {
-	for {
-		r := l.next()
-		if isEndOfLine(r) || r == eof || r == errRune {
-			return
-		}
-	}
-}
-
 // backup backs up one character. This can happen multiple times.
 func (l *lexer) backup() {
 	if len(l.curBuffer) == 0 {
@@ -708,8 +714,9 @@ func (l *lexer) backup() {
 
 // putBackCurBuffer puts back the entire curBuffer
 func (l *lexer) putBackCurBuffer() {
-	l.backBuffer = append(l.backBuffer, l.curBuffer...)
-	l.curBuffer = l.curBuffer[:0]
+	for len(l.curBuffer) > 0 {
+		l.backup()
+	}
 }
 
 // ignore empties the current buffer
@@ -737,7 +744,7 @@ func (l *lexer) ignoreRun() {
 	l.ignore()
 }
 
-// ignoreSpace will advance past spaces
+// ignoreSpace will advance past spaces and tabs, but not newlines
 func (l *lexer) ignoreSpace() {
 	l.ignore()
 	for {
@@ -760,7 +767,8 @@ func (l *lexer) ignoreWhiteSpace() {
 	for {
 		r := l.next()
 		switch {
-		case r == eof:
+		case r == eof:fallthrough
+		case r == errRune:
 			return
 		case isWhiteSpace(r):
 			l.ignore()
@@ -776,7 +784,8 @@ func (l *lexer) ignoreOneSpace() {
 	l.ignore()
 	r := l.next()
 	switch {
-	case r == eof:
+	case r == eof:fallthrough
+	case r == errRune:
 		return
 	case r == '\r':
 		r = l.next()
@@ -802,7 +811,8 @@ func (l *lexer) ignoreNewline() {
 	l.ignore()
 	r := l.next()
 	switch {
-	case r == eof:
+	case r == eof:fallthrough
+	case r == errRune:
 		return
 	case r == '\r':
 		r = l.next()
@@ -853,4 +863,21 @@ func (l *lexer) currentString() (ret string) {
 
 func (l *lexer) currentLen() int {
 	return len(l.curBuffer)
+}
+
+func (l *lexer) addNamedBlock (name string, text string, paramCount int) error {
+	if l.namedBlocks == nil {
+		l.namedBlocks = make(map[string]namedBlockEntry)
+	} else if _,ok := l.getNamedBlock(name); ok {
+		return fmt.Errorf("named block %s has already been defined", name)
+	}
+	l.namedBlocks[name] = namedBlockEntry{text, paramCount}
+	return nil
+}
+
+func (l *lexer) getNamedBlock (name string) (block namedBlockEntry, ok bool) {
+	if block, ok = l.namedBlocks[name]; !ok {
+		block, ok = includeNamedBlocks[name]
+	}
+	return
 }

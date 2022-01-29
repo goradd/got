@@ -10,6 +10,11 @@ import (
 	"strings"
 )
 
+type namedBlockEntry struct {
+	text string
+	paramCount int
+}
+
 var modules map[string]string
 var includePaths []string
 var includeNamedBlocks map[string]namedBlockEntry
@@ -100,8 +105,7 @@ func Run(outDir string,
 	for _, file := range files {
 		newPath := outfilePath(file, outDir)
 		// duplicate the named blocks from the include files in case the previous file added to them
-		useNamedBlocks(includeNamedBlocks)
-		a,err := buildAst(file)
+		a,_,err := buildAst(file)
 		if err != nil {
 			_,_ = fmt.Fprintf(os.Stderr, err.Error())
 			return 1
@@ -125,14 +129,21 @@ func Run(outDir string,
 func prepIncludeFiles(includes []string) (asts []astType, err error) {
 	for _, f := range includes {
 		var a astType
-		a,err = buildAst(f)
+		var l *lexer
+		a,l,err = buildAst(f)
 		if err == nil {
 			asts = append(asts, a)
+			for k,v := range l.namedBlocks {
+				if _,ok := includeNamedBlocks[k]; ok {
+					err = fmt.Errorf("named block %s has previously been defined", k)
+					return
+				}
+				includeNamedBlocks[k] = v
+			}
 		} else {
 			break
 		}
 	}
-	includeNamedBlocks = getNamedBlocks()
 	return
 }
 

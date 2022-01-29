@@ -157,15 +157,15 @@ func init() {
 
 
 	tokens["{{if"] = tokenItem{typ: itemIf} // Outputs a go "if" statement
-	tokens["{{if}}"] = tokenItem{typ: itemEnd, val: "if"}
-	tokens["{{elseif"] = tokenItem{typ: itemEnd, val: "elseif"}
-	tokens["{{else}}"] = tokenItem{typ: itemEnd, val: "else"}
+	tokens["{{if}}"] = tokenItem{typ: itemEndBlock, val: "if"}
+	tokens["{{elseif"] = tokenItem{typ: itemEndBlock, val: "elseif"}
+	tokens["{{else}}"] = tokenItem{typ: itemEndBlock, val: "else"}
 
 	tokens["{{for"] = tokenItem{typ: itemFor} // Outputs a go "for" statement
-	tokens["{{for}}"] = tokenItem{typ: itemEnd, val:"for"}
+	tokens["{{for}}"] = tokenItem{typ: itemEndBlock, val:"for"}
 
 	tokens["{{join"] = tokenItem{typ: itemJoin} // Like a string.Join statement
-	tokens["{{join}}"] = tokenItem{typ: itemEnd, val:"join"}
+	tokens["{{join}}"] = tokenItem{typ: itemEndBlock, val:"join"}
 
 	tokens["}}"] = tokenItem{typ: itemEnd} // need to check this for white space BEFORE instead of after.
 }
