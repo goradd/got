@@ -455,7 +455,7 @@ func Test_lexTypes(t *testing.T) {
 		{"join", "{{join a,b }}c{{join}}", []tokenType{itemJoin, itemParam, itemParam, itemEnd, itemRun,itemEndBlock}},
 		{"join error", "{{join a,\"b }}c{{join}}", []tokenType{itemJoin, itemError}},
 		{"join error 2", "{{join a,b {{d}} }}c{{join}}", []tokenType{itemJoin, itemError}},
-		{"if", "{{if a>b }}c{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock}},
+		{"if", "{{if a>b}}c{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock}},
 		{"else", "{{if a>b }}c{{else}}d{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock, itemRun, itemEndBlock}},
 		{"elseif", "{{if a>b }}c{{elseif c<d}}d{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock, itemRun, itemEnd, itemRun, itemEndBlock}},
 		{"for", "{{for _,i := range g.ar }}c{{for}}", []tokenType{itemFor, itemRun, itemEnd, itemRun,itemEndBlock}},

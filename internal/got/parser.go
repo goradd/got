@@ -42,6 +42,10 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 			endItem = item
 			return
 
+		case itemEndBlock:
+			endItem = item
+			return
+
 		case itemText:fallthrough
 		case itemGo:
 			item.childItems, endItem = p.parseRun()
@@ -83,6 +87,15 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 				return
 			}
 			subItems = append(subItems, item2)
+
+		case itemFor:
+			item2 := p.parseFor(item)
+			if item2.typ == itemError {
+				endItem = item2
+				return
+			}
+			subItems = append(subItems, item2)
+
 		default:
 			panic("unexpected item " + item.typ.String()) // this is a programming bug, not a template error
 		}
@@ -171,7 +184,7 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 	item.childItems, endItem = p.parseRun()
 
 	switch endItem.typ {
-	case itemEnd:
+	case itemEndBlock:
 		// correctly terminated a value, so keep going
 	case itemEOF:
 		item.typ = itemError
@@ -241,6 +254,62 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 		return []tokenItem{item}
 	}
 }
+func (p *parser) parseFor(item tokenItem) tokenItem {
+	conditionItem := <-p.lexer.items
+	switch conditionItem.typ {
+	case itemRun:
+		item.val = conditionItem.val
+	case itemEnd:
+		item.typ = itemError
+		item.val = "missing condition in for statement"
+		return item
+	case itemEOF:
+		item.typ = itemError
+		item.val = "unexpected end of file"
+		return item
+	case itemError:
+		return conditionItem
+	default:
+		item.typ = itemError
+		item.val = "unexpected text inside a value definition"
+		return item
+	}
+
+	endItem := <-p.lexer.items
+	switch endItem.typ {
+	case itemEnd:
+		// correctly terminated a value, so keep going
+	case itemEOF:
+		item.typ = itemError
+		item.val = "unexpected end of file"
+		return item
+	case itemError:
+		return endItem
+	default:
+		item.typ = itemError
+		item.val = "unexpected text inside an if statement"
+		return item
+	}
+
+	// get the items inside the for statement
+	item.childItems, endItem = p.parseRun()
+
+	switch endItem.typ {
+	case itemEndBlock:
+		// correctly terminated a value, so keep going
+	case itemEOF:
+		item.typ = itemError
+		item.val = "unexpected end of file"
+		return item
+	case itemError:
+		return endItem
+	default:
+		item.typ = itemError
+		item.val = "unexpected text inside a for statement"
+		return item
+	}
+	return item
+}
 
 func (p *parser) parseJoin(item tokenItem) tokenItem {
 	sliceItem := <-p.lexer.items
@@ -261,7 +330,7 @@ func (p *parser) parseJoin(item tokenItem) tokenItem {
 		return endItem
 	}
 	item.childItems, endItem = p.parseRun()
-	if endItem.typ != itemEnd  || endItem.val != "join"{
+	if endItem.typ != itemEndBlock  || endItem.val != "join"{
 		endItem.typ = itemError
 		endItem.val = "expected ending join tag"
 		return endItem

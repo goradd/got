@@ -35,25 +35,15 @@ type stateFn func(*lexer) stateFn
 
 // lex opens the file and returns a lexer that will emit tokens on
 // the lexer's channel
-func lexFile(fileName string, relPaths ...string) *lexer {
-	inFile,err := os.Open(fileName)
-	defer func() {
-		_ = inFile.Close()
-	}()
-
+func lexFile(fileName string, reader io.Reader, relPaths ...string) *lexer {
 	l := &lexer{
-		input:    bufio.NewReader(inFile),
+		input:    bufio.NewReader(reader),
 		fileName: fileName,
 		items:    make(chan tokenItem),
 		relativePaths: relPaths,
 	}
 
-	if err != nil {
-		l.emitError("error opening file %s", fileName)
-		close(l.items)
-	} else {
-		go l.run()
-	}
+	go l.run()
 	return l
 }
 
@@ -270,6 +260,7 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 			fileName2 := filepath.Join(thisPath, relPath, fileName)
 			if fileExists(fileName2) {
 				foundPath = fileName2
+				break
 			}
 		}
 	}
@@ -315,7 +306,17 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 		relPaths = append(relPaths, curRelPath)
 	}
 
-	l2 := lexFile(foundPath, relPaths...)
+	inFile,err := os.Open(foundPath)
+	if err != nil {
+		l.emitError("Include file error: %s", err.Error())
+		return nil // stop
+	}
+	defer func() {
+		_ = inFile.Close()
+	}()
+
+
+	l2 := lexFile(foundPath, inFile, relPaths...)
 
 	for item := range l2.items {
 		l.emit(item) // send items as if they are part of current file
@@ -331,7 +332,7 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 
 func fileExists(name string) bool {
 	_, err := os.Stat(name)
-	return 	errors.Is(err, fs.ErrNotExist)
+	return 	!errors.Is(err, fs.ErrNotExist)
 }
 
 func (l *lexer) lexDefineNamedBlock() stateFn {

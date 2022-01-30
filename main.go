@@ -40,7 +40,8 @@ func main() {
 		fmt.Println("-d: The directory to search for files if using the -t directive.")
 		return
 	}
-	ret := got.Run(outDir,typ, runImports, includes, inputDirectory, files)
-	os.Exit(ret)
+	if ret := got.Run(outDir,typ, runImports, includes, inputDirectory, files); ret != 0 {
+		os.Exit(ret)
+	}
 }
 

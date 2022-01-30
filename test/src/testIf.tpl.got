@@ -1,5 +1,5 @@
-{{define package}}template{{end}}
-{{define name}}TestIf{{end}}
+{{define package}}template{{end package}}
+{{define name}}TestIf{{end name}}
 
 {{define body}}
 
@@ -35,7 +35,7 @@ b := 1
 {{if}}
 
 
-{{end}}
+{{end body}}
 
 
 {{: "runner.inc"}}
