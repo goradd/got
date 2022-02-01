@@ -237,6 +237,7 @@ func Test_lexer_backup(t *testing.T) {
 type errReader int
 
 func (errReader) Read(p []byte) (n int, err error) {
+	_ = p
 	return 0, errors.New("test error")
 }
 
@@ -458,7 +459,7 @@ func Test_lexBlocks(t *testing.T) {
 
 	items, l := runBlockLexer("{{< abc}}123{{end abc}}")
 	assert.Len(t, items, 0)
-	assert.Equal(t, namedBlockEntry{"123", 0}, l.namedBlocks["abc"])
+	assert.Equal(t, "123", l.namedBlocks["abc"].text)
 
 	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< abc}}456{{end abc}}{{abc}}")
 	assert.Len(t, items, 1)
@@ -467,7 +468,8 @@ func Test_lexBlocks(t *testing.T) {
 
 	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< def 2}}456{{end def}}")
 	assert.Len(t, items, 0)
-	assert.Equal(t, namedBlockEntry{"456", 2}, l.namedBlocks["def"])
+	assert.Equal(t, "456", l.namedBlocks["def"].text)
+	assert.Equal(t, 2, l.namedBlocks["def"].paramCount)
 
 	items, l = runBlockLexer(`{{< abc}}
 123
@@ -476,9 +478,9 @@ func Test_lexBlocks(t *testing.T) {
 456
 {{end def}}`)
 	assert.Len(t, items, 1)
-	assert.Equal(t, namedBlockEntry{"\n123\n", 0}, l.namedBlocks["abc"])
-	assert.Equal(t, namedBlockEntry{"\n456\n", 2}, l.namedBlocks["def"])
-
+	assert.Equal(t, "\n123\n", l.namedBlocks["abc"].text)
+	assert.Equal(t, "\n456\n", l.namedBlocks["def"].text)
+	assert.Equal(t, 2, l.namedBlocks["def"].paramCount)
 
 	items, l = runBlockLexer("{{< abc}}123")
 	assert.Len(t, items, 1)
