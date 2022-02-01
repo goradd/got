@@ -39,6 +39,7 @@ func lexFile(fileName string,
 	reader io.Reader,
 	namedBlocks map[string]namedBlockEntry,
 	relPaths ...string) *lexer {
+
 	l := &lexer{
 		input:    bufio.NewReader(reader),
 		fileName: fileName,
@@ -852,8 +853,6 @@ func (l *lexer) currentLen() int {
 func (l *lexer) addNamedBlock (name string, text string, paramCount int) error {
 	if l.namedBlocks == nil {
 		l.namedBlocks = make(map[string]namedBlockEntry)
-	} else if _,ok := l.getNamedBlock(name); ok {
-		return fmt.Errorf("named block %s has already been defined", name)
 	}
 	l.namedBlocks[name] = namedBlockEntry{text, paramCount}
 	return nil

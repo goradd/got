@@ -111,6 +111,16 @@ func Run(outDir string,
 			namedBlocks[k] = v
 		}
 
+		// Default named block values
+		namedBlocks["templatePath"] = namedBlockEntry{file, 0}
+		namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0}
+		namedBlocks["templateRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)), 0}
+		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0}
+		namedBlocks["outPath"] = namedBlockEntry{newPath, 0}
+		namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0}
+		namedBlocks["outRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath)), 0}
+		namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0}
+
 		var a astType
 		a, err = buildAst(file, namedBlocks)
 		if err != nil {

@@ -1,0 +1,23 @@
+package template
+
+import (
+	"io"
+	"fmt"
+)
+
+{{# Here we are redefining a previously defined block to make sure the defines are isolated.}}
+{{< first }}
+Again
+{{end first}}
+
+func TestSub2(_w io.Writer) (err error) {
+{{
+	Print me: {{first}}.
+}}
+	return
+}
+
+
+func init() {
+    registerTest(TestSub2, "TestSub2")
+}

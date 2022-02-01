@@ -362,9 +362,13 @@ The fragment name is NOT surrounded by quotes, and cannot contain any whitespace
 
 The following fragments are predefined:
 * `{{templatePath}}` will result in the full path of the template file being processed
-* `{{templateName}}` will produce the base name of the template file, including any extensions
-* `{{templateRoot}}` will produce the base name of the template file without any extensions
-* `{{templateDir}}` will produce the directory name of the template file being processed, without the preceeding path
+* `{{templateName}}` will produce the base name of the template file being processed, including any extensions
+* `{{templateRoot}}` will produce the base name of the template file being processed without any extensions
+* `{{templateParent}}` will produce the directory name of the template file being processed, without the preceeding path
+* `{{outPath}}` will result in the full path of the output file being written
+* `{{outName}}` will produce the base name of the output file being written, including any extensions
+* `{{outRoot}}` will produce the base name of the output file being written without any extensions
+* `{{outParent}}` will produce the directory name of the output file being written, without the preceeding path
 
 Note that if you are looking at these from an included file, these will be the parent file. Multiple
 levels of includes will return the information for the top level file being processed. 
@@ -513,7 +517,7 @@ func writeTemplate(ctx context.Context, buf *bytes.Buffer) {
 <p>
 The caller is: {{=s ctx.Value("something") }}
 </p>
-{{end}}
+{{end body}}
 
 {{# include the html template. Since the template is html, we need to put ourselves in static text mode first }}
 {{ 

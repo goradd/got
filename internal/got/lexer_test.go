@@ -461,9 +461,10 @@ func Test_lexBlocks(t *testing.T) {
 	assert.Len(t, items, 0)
 	assert.Equal(t, namedBlockEntry{"123", 0}, l.namedBlocks["abc"])
 
-	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< abc}}123{{end abc}}")
+	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< abc}}456{{end abc}}{{abc}}")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemRun, items[0].typ)
+	assert.Equal(t, "456",  items[0].val)
 
 	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< def 2}}456{{end def}}")
 	assert.Len(t, items, 0)
