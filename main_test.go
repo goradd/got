@@ -44,14 +44,18 @@ func TestGot(t *testing.T) {
 
 	// compare the outputs and report differences
 
-	files,_ := filepath.Glob(expectedPath + string(os.PathSeparator) + "*.out")
+	files, _ := filepath.Glob(expectedPath + string(os.PathSeparator) + "*.out")
 
-	for _,file := range files {
-		compare,_ := ioutil.ReadFile(file)
-		if expected,err := ioutil.ReadFile(filepath.Join(comparePath, filepath.Base(file))); err != nil {
+	for _, file := range files {
+		compare, _ := ioutil.ReadFile(file)
+		if expected, err := ioutil.ReadFile(filepath.Join(comparePath, filepath.Base(file))); err != nil {
 			t.Error(err)
-		} else if bytes.Compare(expected, compare) != 0 {
-			t.Errorf("File %s is not a match.", filepath.Base(file))
+		} else {
+			expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
+			compare = bytes.Replace(compare, []byte("\r\n"), []byte("\n"), -1)
+			if bytes.Compare(expected, compare) != 0 {
+				t.Errorf("File %s is not a match.", filepath.Base(file))
+			}
 		}
 	}
 }
@@ -69,8 +73,6 @@ func Test_badInclude2Fail(t *testing.T) {
 	ret := got.Run("./test/template", "", true, "", "", []string{"./test/src/failureTests/badInclude2.got"})
 	assert.Equal(t, 1, ret)
 }
-
-
 
 func Test_tooManyParams(t *testing.T) {
 	resetTemplates()
@@ -93,7 +95,6 @@ func Test_badBlock(t *testing.T) {
 	assert.Equal(t, 1, ret)
 }
 
-
 func TestInfo(t *testing.T) {
 	resetTemplates()
 
@@ -106,8 +107,8 @@ func TestInfo(t *testing.T) {
 }
 
 func resetTemplates() {
-	files,_ := filepath.Glob("./test/template/*.go")
-	for _,f := range files {
+	files, _ := filepath.Glob("./test/template/*.go")
+	for _, f := range files {
 		_ = os.Remove(f)
 	}
 }
