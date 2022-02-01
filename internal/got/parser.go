@@ -60,6 +60,11 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 		case itemText:fallthrough
 		case itemGo:
 			item.childItems, endItem = p.parseRun()
+			if endItem.typ == itemEOF {
+				endItem.typ = itemError
+				endItem.val = "unexpected end of file"
+				return
+			}
 			if endItem.typ != itemEnd {
 				return
 			}
@@ -111,6 +116,7 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 			panic("unexpected item " + item.typ.String()) // this is a programming bug, not a template error
 		}
 	}
+	endItem.typ = itemEOF
 	return
 }
 
@@ -119,6 +125,11 @@ func (p *parser) parseValue(item tokenItem) tokenItem {
 	switch runItem.typ {
 	case itemRun:
 		item.val = strings.TrimSpace(runItem.val)
+		if item.val == "" {
+			item.typ = itemError
+			item.val = "missing value"
+			return item
+		}
 	case itemEnd:
 		item.typ = itemError
 		item.val = "missing value"
@@ -130,7 +141,7 @@ func (p *parser) parseValue(item tokenItem) tokenItem {
 	case itemError:
 		return runItem
 	default:
-		panic("unexpected item inside a value block") // this is programming but, not a template error
+		panic("unexpected item inside a value block") // this is a programming err, not a template error
 	}
 
 	endItem := <- p.lexer.items
@@ -205,7 +216,7 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 		return []tokenItem{endItem}
 	default:
 		item.typ = itemError
-		item.val = "unexpected text inside an if statement"
+		item.val = "unexpected end of an if statement"
 		return []tokenItem{item}
 	}
 
@@ -308,6 +319,11 @@ func (p *parser) parseFor(item tokenItem) tokenItem {
 	switch endItem.typ {
 	case itemEndBlock:
 		// correctly terminated a value, so keep going
+		if endItem.val != "for" {
+			item.typ = itemError
+			item.val = "unexpected end block of for, got: " + endItem.val
+			return item
+		}
 	case itemEOF:
 		item.typ = itemError
 		item.val = "unexpected end of file"
@@ -316,7 +332,7 @@ func (p *parser) parseFor(item tokenItem) tokenItem {
 		return endItem
 	default:
 		item.typ = itemError
-		item.val = "unexpected text inside a for statement"
+		item.val = "unexpected end of a for statement"
 		return item
 	}
 	return item

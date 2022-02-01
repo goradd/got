@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/goradd/gofile/pkg/sys"
+	"github.com/goradd/got/internal/got"
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -51,4 +53,14 @@ func TestGot(t *testing.T) {
 		}
 	}
 }
+
+func TestFailures(t *testing.T) {
+	// args is a global in the main package just for testing
+
+	args = "-i -o github.com/goradd/got/test/template -github.com/goradd/got/test/src/failureTests/"
+
+	ret := got.Run("./test/template", "", false, "", "", []string{"./test/src/failureTests/noTerm.got"})
+	assert.Equal(t, ret, 1)
+}
+
 
