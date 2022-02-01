@@ -506,6 +506,10 @@ func Test_lexBlocks(t *testing.T) {
 	assert.Len(t, items, 1)
 	assert.Equal(t, itemError, items[0].typ)
 
+	items, l = runBlockLexer("{{< include\n}}")
+	assert.Len(t, items, 1)
+	assert.Equal(t, itemError, items[0].typ)
+
 }
 
 func Test_subsitute(t *testing.T) {
@@ -556,13 +560,13 @@ func Test_subsitute(t *testing.T) {
 		assert.Equal(t, "123de", items[0].val)
 	})
 
-	t.Run("param error 1", func(t *testing.T) {
-		items, _ := runBlockLexer("{{< abc 2}}123$1$2{{end abc}}{{> abc d e}}")
+	t.Run("too many params error", func(t *testing.T) {
+		items, _ := runBlockLexer("{{< abc 2}}123$1$2{{end abc}}{{> abc d,e,f}}")
 		assert.Equal(t, 1, len(items))
 		assert.Equal(t, itemError, items[0].typ)
 	})
 
-	t.Run("param error 2", func(t *testing.T) {
+	t.Run("bad param", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc 2}}123$1$2{{end abc}}{{> abc d,\"e}}")
 		assert.Equal(t, 1, len(items))
 		assert.Equal(t, itemError, items[0].typ)
@@ -587,6 +591,11 @@ func Test_subsitute(t *testing.T) {
 		assert.Equal(t, "123", items[0].val)
 	})
 
+	t.Run("optional param", func(t *testing.T) {
+		items, _ := runBlockLexer("{{< abc 2 }}123$1$2{{end abc}}{{> abc d}}")
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "123d", items[0].val)
+	})
 
 }
 

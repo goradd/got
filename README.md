@@ -338,7 +338,8 @@ inserted into the template at that spot. You can include the `{{` or `{{g` tags 
 force the processor into the text or go modes if needed. The fragment can be defined
 any time before it is included, including being defined in other include files. You can add optional parameters
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
-placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
+placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed
+to have a parameter that has a quote in it.
 
     {{< fragName }} or {{define fragName }}                  Start a block called "fragName".
     {{< fragName <count>}} or {{define fragName <count>}}    Start a block called "fragName" that will have <count> parameters.
@@ -353,7 +354,7 @@ If you attempt to use a fragment that was not previously defined, GoT will panic
 
 param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
 If a parameter is not included when using a fragment, an empty value will be substituted for the parameter in the fragment.
-Use commas to separate parameters, including empty parameters.
+
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
 `{{end fragName}}` tag. The end tag must be just like that, with no spaces after the fragName.

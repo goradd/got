@@ -435,7 +435,7 @@ func (l *lexer) lexSubstitute(optional bool) stateFn {
 		return nil
 	}
 	// process parameters
-	if processedBlock, err = processParams(block, params); err != nil {
+	if processedBlock, err = processParams(name, block, params); err != nil {
 		l.emitError(err.Error())
 		return nil
 	}
@@ -453,7 +453,7 @@ func (l *lexer) lexSubstitute(optional bool) stateFn {
 	return lexRun
 }
 
-func processParams(in namedBlockEntry, params []string) (out string, err error) {
+func processParams(name string, in namedBlockEntry, params []string) (out string, err error) {
 	out = in.text
 
 	var i int
@@ -465,14 +465,22 @@ func processParams(in namedBlockEntry, params []string) (out string, err error) 
 		out = in.text
 		return
 	}
-	if len(params) !=  in.paramCount {
-		err = fmt.Errorf("unexpected number of parameters given: expected %d, got %d", in.paramCount, len(params))
+	if len(params) >  in.paramCount {
+		err = fmt.Errorf("too many parameters given for block %s: max %d, got %d", name, in.paramCount, len(params))
 		return
 	}
 
 	for i, s = range params {
 		search := fmt.Sprintf("$%d", i+1)
 		out = strings.Replace(out, search, s, -1)
+	}
+
+	// fill in with blanks the remaining parameters
+	if i < in.paramCount - 1 {
+		for j := i + 1; j < in.paramCount;j++ {
+			search := fmt.Sprintf("$%d", j+1)
+			out = strings.Replace(out, search, "", -1)
+		}
 	}
 
 	return
