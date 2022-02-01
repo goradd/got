@@ -1,15 +1,13 @@
+https://img.shields.io/github/workflow/status/goradd/got/Go
 # GoT
 
 GoT (short for go templates) is a template engine that generates fast go templates. 
 
 It is similar to some other 
-template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that can get compiled 
+template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that is then compiled 
 into your program or a go plugin. This approach creates extremely fast templates, especially as
 compared to go's standard template engine. It also gives you much more freedom than Go's template
 engine, since at any time you can just switch to go code to do what you want.
-
-GoT's primary function is to support the developing goradd web framework, and that drives my
-design decisions. However, it is a standalone template engine that you may find useful. 
 
 - [Features](#features)
 - [Install](#install)
@@ -98,7 +96,7 @@ text mode.
 From within text mode, you can send out a go value by surrounding the go code with `{{` and `}}` tags without spaces
 separating the go code from the brackets.
 
-Text will get written to output by calling:
+In the resulting Go code, text will get written to output by calling:
 
  ```_, err = io.WriteString(_w, <text>)``` 
 
@@ -224,9 +222,9 @@ From within any static text context described above you can switch into go conte
 
     {{g or {{go     Change to straight go code.
     
-Go code is copied verbatim to the final template. Use it to set up loops, call special processing function, etc.
+Go code is copied verbatim to the final template. Use it to set up loops, call special processing functions, etc.
 End go mode using the `}}` closing tag. You can also include any other GoT tag inside of Go mode,
-meaning you can next Go mode and all the other template tags.
+meaning you can nest Go mode and all the other template tags.
 
 #### Example
 ```
@@ -236,10 +234,7 @@ meaning you can next Go mode and all the other template tags.
 {{go 
 io.WriteString(_w, "is") 
 }} some code wrapping text escaping to go. }}
-
-
 ```
-
 
 ### Dynamic Text
 The following tags are designed to surround go code that returns a go value. The value will be 

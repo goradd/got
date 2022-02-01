@@ -147,7 +147,7 @@ func (a *astWalker) outputText(val string) (err error) {
 		return
 	}
 	if a.previousOutputEndedInNewline && (val[0] == '\n' || val[0] == '\r') {
-		if val[:2] == "\r\n" {
+		if len(val) >= 2 && val[:2] == "\r\n" {
 			val = val[2:]
 		} else {
 			val = val[1:]

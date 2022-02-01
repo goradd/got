@@ -103,7 +103,6 @@ func TestInfo(t *testing.T) {
 	args = "testEmpty"
 
 	main()
-
 }
 
 func resetTemplates() {
