@@ -1,0 +1,11 @@
+package template
+
+import (
+	"bytes"
+	"fmt"
+)
+
+func includeFailedTest2(_w io.Writer) (err error) {
+{{: "bad1.inc" }}
+}
+

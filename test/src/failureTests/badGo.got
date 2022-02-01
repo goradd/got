@@ -1,11 +1,13 @@
 package template
 
 import (
-	"bytes"
+	"io"
 	"fmt"
 )
 
 func includeFailedTest(_w io.Writer) (err error) {
-{{: "blah" }}
-}
+{{
+abc
+}}
+
 

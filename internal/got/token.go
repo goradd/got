@@ -1,22 +1,28 @@
 package got
 
+import "fmt"
+
 // Sets up the token map, mapping tokens to items. Allows us to use a variety of different tokens for the
 // same tokenItem, including translations
 
-//go:generate stringer -type=tokenType
 type tokenType int
+
+type locationRef struct {
+	fileName   string
+	blockName  string
+	lineNum	   int
+	offset	   int
+}
 
 type tokenItem struct {
 	typ     tokenType
 	escaped bool
+	optional bool
 	withError  bool
 	translate  bool
 	htmlBreaks bool   // adds html break tags in exchange for newlines
 	val        string // filled in by lexer after initialization
-	fileName   string
-	blockName  string
-	lineNum	   int
-	runeNum	   int
+	callStack []locationRef
 	childItems []tokenItem // Filled in during the parsing step to build the ast
 	params map[string]tokenItem // Filled in during the parsing step to build the ast
 }
@@ -140,6 +146,8 @@ func init() {
 
 	tokens["{{>"] = tokenItem{typ: itemSubstitute}   // must follow with a name and a close tag
 	tokens["{{put"] = tokenItem{typ: itemSubstitute} // must follow with a name and a close tag
+	tokens["{{>?"] = tokenItem{typ: itemSubstitute, optional: true}   // must follow with a name and a close tag
+	tokens["{{put?"] = tokenItem{typ: itemSubstitute, optional: true} // must follow with a name and a close tag
 
 	tokens["{{!t"] = tokenItem{typ: itemText, escaped: true, translate: true}
 	tokens["{{!translate"] = tokenItem{typ: itemText, escaped: true, translate: true}
@@ -166,4 +174,24 @@ func init() {
 	tokens["{{join}}"] = tokenItem{typ: itemEndBlock, val:"join"}
 
 	tokens["}}"] = tokenItem{typ: itemEnd}
+}
+
+func (t tokenItem) FormatError() (s string) {
+	if t.typ == itemError {
+		s = "*** Error: " + t.val + "\n"
+		for _,c := range t.callStack {
+			s += "    from " + c.formatErrorLine() + "\n"
+		}
+	}
+	return
+}
+
+func (r locationRef) formatErrorLine() (s string) {
+	s += fmt.Sprintf("line: %d, offset: %d ", r.lineNum + 1, r.offset)
+	if r.blockName != "" {
+		s += "of block: " + r.blockName
+	} else {
+		s += "of file: " + r.fileName
+	}
+	return
 }

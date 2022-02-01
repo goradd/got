@@ -1,4 +1,4 @@
-package template
+package registry
 
 import (
 	"io"
@@ -14,7 +14,7 @@ type Test struct {
 var Tests []Test
 
 
-func registerTest (f TestF, name string) {
+func RegisterTest (f TestF, name string) {
 	Tests = append(Tests, Test{f,name})
 }
 

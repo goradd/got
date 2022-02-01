@@ -345,11 +345,14 @@ any time before it is included, including being defined in other include files. 
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
 
-    {{< fragName }} or {{define fragName }}                      Start a block called "fragName".
-    {{< fragName <count>}} or {{define fragName <count>}}        Start a block called "fragName" that will have <count> parameters.
-    {{> fragName param1,param2,...}} or                          Substitute this tag for the given defined fragment.
+    {{< fragName }} or {{define fragName }}                  Start a block called "fragName".
+    {{< fragName <count>}} or {{define fragName <count>}}    Start a block called "fragName" that will have <count> parameters.
+    {{> fragName param1,param2,...}} or                      Substitute this tag for the given defined fragment.
       {{put fragName param1,param2,...}} or just
       {{fragName param1,param2,...}}
+    {{>? fragName param1,param2,...}} or                     Substitute this tag for the given defined fragment, but if the fragment is not defined, leave blank.
+    {{put? fragName param1,param2,...}}
+
  
 If you attempt to use a fragment that was not previously defined, GoT will panic and stop compiling.
 
@@ -584,5 +587,5 @@ This was a major rewrite with the following changes:
 - {{join }} tag will join items with a string
 - The backup tag {{- has been removed
 - Reorganized the lexer and parser to be easier to debug
-- Added many more unit tests
+- Added many more unit tests. Code coverage > 90%.
 - The output is sent to an io.Writer called _w. This allows more flexible use of the templates, and the ability to wrap them with middleware

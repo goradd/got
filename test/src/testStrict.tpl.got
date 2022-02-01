@@ -1,0 +1,16 @@
+{{define package}}template{{end package}}
+{{define name}}TestStrict{{end name}}
+
+{{define body}}
+
+{{
+{{# testing strict blocks to display things that could be interpreted by GoT}}
+{{# Note that "*strict*" could be any string. }}
+{{begin *strict*}}
+}} or {{
+{{end *strict*}}
+}}
+
+{{end body}}
+
+{{: "runner.inc" }}

@@ -1,7 +1,6 @@
 package got
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -14,17 +13,13 @@ func parse(l *lexer) tokenItem {
 	topItem := tokenItem{typ: itemGo}
 	var endItem tokenItem
 	topItem.childItems, endItem = p.parseRun()
-	// if we have an error, extract all the errors from the channel and combine them
+	// if we have an error that has no call stack, extract all the errors from the channel and build a call stack from them
 	if endItem.typ == itemError {
-		if endItem.blockName != "" {
-			endItem.val = fmt.Sprintf("*** Error at line %d, position %d of block %s: %s", endItem.lineNum, endItem.runeNum, endItem.blockName, endItem.val)
-		} else {
-			endItem.val = fmt.Sprintf("*** Error at line %d, position %d of file %s: %s", endItem.lineNum, endItem.runeNum, endItem.fileName, endItem.val)
-		}
-
-		for item := range p.lexer.items {
-			if item.typ == itemError {
-				endItem.val += "\n" + item.val
+		if len(endItem.callStack) <= 1 {
+			for item := range p.lexer.items {
+				if item.typ == itemError {
+					endItem.callStack = append(endItem.callStack, item.callStack[0])
+				}
 			}
 		}
 		return endItem
@@ -113,7 +108,7 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 			subItems = append(subItems, item2)
 
 		default:
-			panic("unexpected item " + item.typ.String()) // this is a programming bug, not a template error
+			panic("unexpected token") // this is a programming bug, not a template error
 		}
 	}
 	endItem.typ = itemEOF
@@ -141,7 +136,9 @@ func (p *parser) parseValue(item tokenItem) tokenItem {
 	case itemError:
 		return runItem
 	default:
-		panic("unexpected item inside a value block") // this is a programming err, not a template error
+		runItem.typ = itemError
+		runItem.val = "unexpected text inside a value block"
+		return runItem
 	}
 
 	endItem := <- p.lexer.items
@@ -149,15 +146,15 @@ func (p *parser) parseValue(item tokenItem) tokenItem {
 	case itemEnd:
 	return item // correctly terminated a value
 	case itemEOF:
-		item.typ = itemError
-		item.val = "unexpected end of file"
-		return item
+		endItem.typ = itemError
+		endItem.val = "unexpected end of file"
+		return endItem
 	case itemError:
 		return endItem
 	default:
-		item.typ = itemError
-		item.val = "unexpected text inside a value definition"
-		return item
+		endItem.typ = itemError
+		endItem.val = "unexpected text inside a value block"
+		return endItem
 	}
 }
 
@@ -168,19 +165,19 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 		case itemRun:
 			item.val = strings.TrimSpace(conditionItem.val)
 		case itemEnd:
-			item.typ = itemError
-			item.val = "missing condition in if statement"
-			return []tokenItem{item}
+			conditionItem.typ = itemError
+			conditionItem.val = "missing condition in if statement"
+			return []tokenItem{conditionItem}
 		case itemEOF:
-			item.typ = itemError
-			item.val = "unexpected end of file"
-			return []tokenItem{item}
+			conditionItem.typ = itemError
+			conditionItem.val = "unexpected end of file"
+			return []tokenItem{conditionItem}
 		case itemError:
 			return []tokenItem{conditionItem}
 		default:
-			item.typ = itemError
-			item.val = "unexpected text inside a value definition"
-			return []tokenItem{item}
+			conditionItem.typ = itemError
+			conditionItem.val = "unexpected text inside a value definition"
+			return []tokenItem{conditionItem}
 		}
 
 		endItem := <-p.lexer.items
@@ -188,15 +185,15 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 		case itemEnd:
 			// correctly terminated a value, so keep going
 		case itemEOF:
-			item.typ = itemError
-			item.val = "unexpected end of file"
-			return []tokenItem{item}
+			endItem.typ = itemError
+			endItem.val = "unexpected end of file"
+			return []tokenItem{endItem}
 		case itemError:
 			return []tokenItem{endItem}
 		default:
-			item.typ = itemError
-			item.val = "unexpected text inside an if statement"
-			return []tokenItem{item}
+			endItem.typ = itemError
+			endItem.val = "unexpected text inside an if statement"
+			return []tokenItem{endItem}
 		}
 	}
 
@@ -209,15 +206,15 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 	case itemEndBlock:
 		// correctly terminated a value, so keep going
 	case itemEOF:
-		item.typ = itemError
-		item.val = "unexpected end of file"
-		return []tokenItem{item}
+		endItem.typ = itemError
+		endItem.val = "unexpected end of file"
+		return []tokenItem{endItem}
 	case itemError:
 		return []tokenItem{endItem}
 	default:
-		item.typ = itemError
-		item.val = "unexpected end of an if statement"
-		return []tokenItem{item}
+		endItem.typ = itemError
+		endItem.val = "unexpected end of an if statement"
+		return []tokenItem{endItem}
 	}
 
 	switch endItem.val {
@@ -227,20 +224,21 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 	case "else":
 		if item.typ == itemElse {
 			// cannot place an else after an else
-			item.typ = itemError
-			item.val = "cannot put an else after another else"
-			return []tokenItem{item}
+			endItem.typ = itemError
+			endItem.val = "cannot put an else after another else"
+			return []tokenItem{endItem}
 		}
-		elseItem := tokenItem{typ: itemElse}
+		elseItem := endItem
+		elseItem.typ = itemElse
 		items3 := p.parseIf(elseItem)
 		if len(items3) > 0 {
 			switch items3[0].typ {
 			case itemError:
 				return []tokenItem{items3[0]}
 			case itemEOF:
-				item.typ = itemError
-				item.val = "unexpected end of file"
-				return []tokenItem{item}
+				elseItem.typ = itemError
+				elseItem.val = "unexpected end of file"
+				return []tokenItem{elseItem}
 			}
 		}
 		items = append(items, item)
@@ -254,16 +252,17 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 			item.val = "cannot put an elseif after an else"
 			return []tokenItem{item}
 		}
-		elseIfItem := tokenItem{typ: itemElseIf}
+		elseIfItem := item
+		elseIfItem.typ = itemElseIf
 		items3 := p.parseIf(elseIfItem)
 		if len(items3) > 0 {
 			switch items3[0].typ {
 			case itemError:
 				return []tokenItem{items3[0]}
 			case itemEOF:
-				item.typ = itemError
-				item.val = "unexpected end of file"
-				return []tokenItem{item}
+				elseIfItem.typ = itemError
+				elseIfItem.val = "unexpected end of file"
+				return []tokenItem{elseIfItem}
 			}
 		}
 		items = append(items, item)
@@ -282,19 +281,19 @@ func (p *parser) parseFor(item tokenItem) tokenItem {
 	case itemRun:
 		item.val = strings.TrimSpace(conditionItem.val)
 	case itemEnd:
-		item.typ = itemError
-		item.val = "missing condition in for statement"
-		return item
+		conditionItem.typ = itemError
+		conditionItem.val = "missing condition in for statement"
+		return conditionItem
 	case itemEOF:
-		item.typ = itemError
-		item.val = "unexpected end of file"
-		return item
+		conditionItem.typ = itemError
+		conditionItem.val = "unexpected end of file"
+		return conditionItem
 	case itemError:
 		return conditionItem
 	default:
-		item.typ = itemError
-		item.val = "unexpected text inside a value definition"
-		return item
+		conditionItem.typ = itemError
+		conditionItem.val = "unexpected text inside a value definition"
+		return conditionItem
 	}
 
 	endItem := <-p.lexer.items
@@ -302,15 +301,15 @@ func (p *parser) parseFor(item tokenItem) tokenItem {
 	case itemEnd:
 		// correctly terminated a value, so keep going
 	case itemEOF:
-		item.typ = itemError
-		item.val = "unexpected end of file"
-		return item
+		endItem.typ = itemError
+		endItem.val = "unexpected end of file"
+		return endItem
 	case itemError:
 		return endItem
 	default:
-		item.typ = itemError
-		item.val = "unexpected text inside an if statement"
-		return item
+		endItem.typ = itemError
+		endItem.val = "unexpected text inside an if statement"
+		return endItem
 	}
 
 	// get the items inside the for statement
@@ -320,20 +319,20 @@ func (p *parser) parseFor(item tokenItem) tokenItem {
 	case itemEndBlock:
 		// correctly terminated a value, so keep going
 		if endItem.val != "for" {
-			item.typ = itemError
-			item.val = "unexpected end block of for, got: " + endItem.val
-			return item
+			endItem.typ = itemError
+			endItem.val = "unexpected end block of for, got: " + endItem.val
+			return endItem
 		}
 	case itemEOF:
-		item.typ = itemError
-		item.val = "unexpected end of file"
-		return item
+		endItem.typ = itemError
+		endItem.val = "unexpected end of file"
+		return endItem
 	case itemError:
 		return endItem
 	default:
-		item.typ = itemError
-		item.val = "unexpected end of a for statement"
-		return item
+		endItem.typ = itemError
+		endItem.val = "unexpected end of a for statement"
+		return endItem
 	}
 	return item
 }

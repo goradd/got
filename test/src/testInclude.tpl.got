@@ -1,8 +1,9 @@
 package template
 
 import (
-	"bytes"
+	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
 )
 
 {{: "testInclude.inc" }}
@@ -38,5 +39,5 @@ The end.
 }
 
 func init() {
-    registerTest(TestInclude, "TestInclude")
+    registry.RegisterTest(TestInclude, "TestInclude")
 }

@@ -39,7 +39,7 @@ func buildAst(fileName string, namedBlocks map[string]namedBlockEntry) (ret astT
 	l := lexFile(fileName, inFile, namedBlocks)
 	ret.topItem = parse(l)
 	if ret.topItem.typ == itemError {
-		err = fmt.Errorf(ret.topItem.val)
+		err = fmt.Errorf(ret.topItem.FormatError())
 	}
 	return
 }
@@ -189,7 +189,7 @@ func (a *astWalker) outputValue(item tokenItem) (err error) {
 	if item.htmlBreaks { // assume escaped too
 		writer = `io.WriteString(_w, strings.Replace(html.EscapeString(%s), "\n", "<br>\n", -1))`
 	} else if item.escaped {
-		writer = `io.WriteString(_w, html.EscapeString(%s)); err != nil`
+		writer = `io.WriteString(_w, html.EscapeString(%s))`
 	}
 
 	var formatter string

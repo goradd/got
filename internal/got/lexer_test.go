@@ -228,7 +228,6 @@ func Test_lexer_putBackCurBuffer(t *testing.T) {
 }
 
 func Test_lexer_backup(t *testing.T) {
-	// just test for panic. Mostly tested in other places.
 	l := newTestLexer("")
 	assert.Panics(t, func() {
 		l.backup()
@@ -483,27 +482,27 @@ func Test_lexBlocks(t *testing.T) {
 
 	items, l = runBlockLexer("{{< abc}}123")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemError, items[0].typ)
 
 	items, l = runBlockLexer("{{< abc {{xyz}} }}")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemError, items[0].typ)
 
 	items, l = runBlockLexer("{{< abc def }}")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemError, items[0].typ)
 
 	items, l = runBlockLexer("{{< abc def tre}}")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemError, items[0].typ)
 
 	items, l = runBlockLexer("{{< abc\n}}")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemError, items[0].typ)
 
 	items, l = runBlockLexer("{{< include}}")
 	assert.Len(t, items, 1)
-	assert.Equal(t, items[0].typ, itemError)
+	assert.Equal(t, itemError, items[0].typ)
 
 }
 
@@ -511,73 +510,81 @@ func Test_subsitute(t *testing.T) {
 	t.Run("std block", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc}}123{{end abc}}{{> abc}}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemRun)
-		assert.Equal(t, items[0].val, "123")
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "123", items[0].val)
 	})
 
 	t.Run("short block", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc}}123{{end abc}}{{abc}}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemRun)
-		assert.Equal(t, items[0].val, "123")
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "123", items[0].val)
 	})
 
 	t.Run("error1", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc}}123{{end abc}}{{> {{abc}} }}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemError)
+		assert.Equal(t, itemError, items[0].typ)
 	})
 
 	t.Run("error2", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc}}123{{end abc}}{{> a {{abc}} }}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemError)
+		assert.Equal(t, itemError, items[0].typ)
 	})
 
 
 	t.Run("missing block error", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc}}123{{end abc}}{{> def }}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemError)
+		assert.Equal(t, itemError, items[0].typ)
 	})
 
 	t.Run("1 param", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc 1}}123$1{{end abc}}{{> abc d}}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemRun)
-		assert.Equal(t, items[0].val, "123d")
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "123d", items[0].val)
 	})
 
 	t.Run("2 param w space", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc 2 }}123$1$2{{end abc}}{{> abc d,e}}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemRun)
-		assert.Equal(t, items[0].val, "123de")
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "123de", items[0].val)
 	})
 
 	t.Run("param error 1", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc 2}}123$1$2{{end abc}}{{> abc d e}}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemError)
+		assert.Equal(t, itemError, items[0].typ)
 	})
 
 	t.Run("param error 2", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc 2}}123$1$2{{end abc}}{{> abc d,\"e}}")
 		assert.Equal(t, 1, len(items))
-		assert.Equal(t, items[0].typ, itemError)
+		assert.Equal(t, itemError, items[0].typ)
 	})
 
 	t.Run("error in block", func(t *testing.T) {
 		items, _ := runBlockLexer("{{< abc}}{{# {{end abc}}{{> abc}}")
 		assert.Equal(t, 2, len(items))
-		assert.Equal(t, items[0].typ, itemError)
-		assert.Equal(t, items[1].typ, itemError)
+		assert.Equal(t, itemError, items[0].typ)
+		assert.Equal(t, itemError, items[1].typ)
 	})
 
 	t.Run("block in text", func(t *testing.T) {
 		items, _ := runBlockLexer("{{define abc}}123{{end abc}}{{ Here is {{abc}} }}")
 		assert.Equal(t, 5, len(items))
 	})
+
+	t.Run("optional block", func(t *testing.T) {
+		items, _ := runBlockLexer("{{>? abc}}123")
+		assert.Equal(t, 1, len(items))
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "123", items[0].val)
+	})
+
 
 }
 
@@ -636,13 +643,79 @@ func Test_Join(t *testing.T) {
 }
 
 func Test_LineCounting(t *testing.T) {
-	t.Run("one line", func(t *testing.T) {
-		items, _ := runBlockLexer(`{{g abc }}`)
-		assert.Equal(t, 3, len(items))
-		assert.Equal(t, itemGo, items[0].typ)
-		assert.Equal(t, 0, items[0].runeNum)
+	t.Run("accept", func(t *testing.T) {
+		l := newTestLexer("123\n4567")
+		line,pos := l.calcCurLineNum()
+		assert.Equal(t, 0, line)
+		assert.Equal(t, 0, pos)
 
-		assert.Equal(t, itemRun, items[1].typ)
-		assert.Equal(t, 4, items[1].runeNum)
+		l.acceptRun()
+		line,pos = l.calcCurLineNum()
+		assert.Equal(t, 1, line)
+		assert.Equal(t, 4, pos)
+
+		l.backup()
+		line,pos = l.calcCurLineNum()
+		assert.Equal(t, 1, line)
+		assert.Equal(t, 3, pos)
+
+		l.backup()
+		l.backup()
+		l.backup()
+		l.backup()
+		l.backup()
+		line,pos = l.calcCurLineNum()
+		assert.Equal(t, 0, line)
+		assert.Equal(t, 2, pos)
+
+		l.acceptUntil("4")
+		line,pos = l.calcCurLineNum()
+		assert.Equal(t, 1, line)
+		assert.Equal(t, 0, pos)
 	})
+
+	t.Run("two lines", func(t *testing.T) {
+		items, _ := runBlockLexer("{{g abc }}\n{{i 4}}{{i 5}}")
+		assert.Equal(t, 0, items[0].callStack[0].offset)
+		assert.Equal(t, 4, items[1].callStack[0].offset)
+		assert.Equal(t, 8, items[2].callStack[0].offset)
+		assert.Equal(t, 10, items[3].callStack[0].offset)
+
+		assert.Equal(t, 1, items[4].callStack[0].lineNum)
+		assert.Equal(t, 0, items[4].callStack[0].offset)
+
+		assert.Equal(t, 1, items[5].callStack[0].lineNum)
+		assert.Equal(t, 4, items[5].callStack[0].offset)
+
+		assert.Equal(t, 1, items[6].callStack[0].lineNum)
+		assert.Equal(t, 5, items[6].callStack[0].offset)
+
+		assert.Equal(t, 1, items[7].callStack[0].lineNum)
+		assert.Equal(t, 7, items[7].callStack[0].offset)
+	})
+
+	t.Run("comment", func(t *testing.T) {
+		items, _ := runBlockLexer("{{# abc }}\n{{i 4}}{{i 5}}")
+		assert.Equal(t, 0, items[0].callStack[0].lineNum)
+		assert.Equal(t, 10, items[0].callStack[0].offset)
+		assert.Equal(t, itemRun, items[0].typ)
+		assert.Equal(t, "\n", items[0].val)
+	})
+}
+
+func Test_IncludeErrors(t *testing.T) {
+	t.Run("bad filename 1", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{:  {{ abc }}`)
+		assert.Equal(t, itemError, items[0].typ)
+	})
+
+	t.Run("bad filename 2", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{: "abc }}`)
+		assert.Equal(t, itemError, items[0].typ)
+	})
+	t.Run("file not found", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{: abc }}`)
+		assert.Equal(t, itemError, items[0].typ)
+	})
+
 }

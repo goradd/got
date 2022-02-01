@@ -3,6 +3,8 @@ package {{package}}
 import (
 	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
+	{{>? imports}}
 )
 
 
@@ -13,5 +15,5 @@ func {{name}}(_w io.Writer) (err error) {
 }
 
 func init() {
-    registerTest({{name}}, "{{name}}")
+    registry.RegisterTest({{name}}, "{{name}}")
 }

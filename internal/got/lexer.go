@@ -162,7 +162,7 @@ func lexTag(l *lexer)  stateFn {
 		return l.lexDefineNamedBlock()
 
 	case itemSubstitute:
-		return l.lexSubstitute()
+		return l.lexSubstitute(i.optional)
 
 	case itemStrictBlock:
 		return l.lexStrictBlock()
@@ -192,10 +192,13 @@ func (l *lexer) emit(i tokenItem) {
 		i.val = l.currentString()
 	}
 
-	i.fileName = l.fileName
-	i.blockName = l.blockName
-	i.lineNum = l.lineNum
-	i.runeNum = l.lineRuneNum
+	ref := locationRef{
+		fileName: l.fileName,
+		blockName: l.blockName,
+		lineNum: l.lineNum,
+		offset: l.lineRuneNum,
+	}
+	i.callStack = append(i.callStack, ref)
 
 	l.items <- i
 	l.ignore()
@@ -264,7 +267,7 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 		}
 	}
 
-	// If not yet found, the find relative to the include file
+	// If not yet found, then find relative to the include file
 	if foundPath == "" {
 		fileName2 := filepath.Join(filepath.Dir(l.fileName), fileName)
 		if fileExists(fileName2) {
@@ -386,7 +389,7 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 	return lexRun
 }
 
-func (l *lexer) lexSubstitute() stateFn {
+func (l *lexer) lexSubstitute(optional bool) stateFn {
 	l.ignoreSpace()
 	l.acceptUntil1(" \t}{")
 	name := l.currentString()
@@ -411,9 +414,13 @@ func (l *lexer) lexSubstitute() stateFn {
 	var ok bool
 	var processedBlock string
 
-	if block, ok = l.getNamedBlock(name); !ok {
-		l.emitError("named block not found: %s", name)
-		return nil
+	if block, ok = l.getNamedBlock(name); !ok  {
+		if !optional {
+			l.emitError("named block not found: %s", name)
+			return nil
+		} else {
+			return lexRun // keep going
+		}
 	}
 
 	params, err := splitParams(paramString)
@@ -422,7 +429,7 @@ func (l *lexer) lexSubstitute() stateFn {
 		return nil
 	}
 	// process parameters
-	if processedBlock, err = processParams(name, block, params); err != nil {
+	if processedBlock, err = processParams(block, params); err != nil {
 		l.emitError(err.Error())
 		return nil
 	}
@@ -432,7 +439,7 @@ func (l *lexer) lexSubstitute() stateFn {
 	for item := range l2.items {
 		l.emit(item) // send items as if they are part of current file
 		if item.typ == itemError {
-			l.emitError("") // add where the file was included from
+			l.emitError("") // add where the item was included from
 			return nil // stop processing
 		}
 	}
@@ -440,7 +447,7 @@ func (l *lexer) lexSubstitute() stateFn {
 	return lexRun
 }
 
-func processParams(name string, in namedBlockEntry, params []string) (out string, err error) {
+func processParams(in namedBlockEntry, params []string) (out string, err error) {
 	out = in.text
 
 	var i int
@@ -529,18 +536,9 @@ func (l *lexer) lexJoin() stateFn {
 	return lexParams
 }
 
-// emitError emits an error token and terminates the scan by passing
-// back a nil pointer that will be the next state, terminating l.nextItem.
+// emitError emits an error token
 func (l *lexer) emitError(format string, args ...interface{}) {
-	line,pos := l.calcCurLineNum()
-	line++ // convert to 1-based lines
-	if l.blockName != "" {
-		s := fmt.Sprintf("*** Error at line %d, position %d of block %s: ", line, pos, l.blockName)
-		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
-	} else {
-		s := fmt.Sprintf("*** Error at line %d, position %d of file %s: ", line, pos, l.fileName)
-		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
-	}
+	l.emit(tokenItem{typ: itemError, val: fmt.Sprintf(format, args...)})
 }
 
 // isSpace reports whether r is a space character.
@@ -728,6 +726,7 @@ func (l *lexer) ignore() {
 
 func (l *lexer) calcCurLineNum() (lineNum, runeNum int) {
 	runeNum = l.lineRuneNum
+	lineNum = l.lineNum
 	for _, c := range l.curBuffer {
 		if isEndOfLine(c) {
 			lineNum ++

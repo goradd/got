@@ -3,6 +3,7 @@ package template
 import (
 	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
 )
 
 {{< first }}
@@ -59,5 +60,5 @@ return
 }
 
 func init() {
-    registerTest(TestSub, "TestSub")
+    registry.RegisterTest(TestSub, "TestSub")
 }

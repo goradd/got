@@ -20,7 +20,9 @@ import (
 func TestGot(t *testing.T) {
 	// args is a global in the main package just for testing
 
-	args = "-t got -i -o github.com/goradd/got/test/template -I github.com/goradd/got/test/src/inc2:github.com/goradd/got/test/src/inc -d github.com/goradd/got/test/src"
+	resetTemplates()
+
+	args = "-t got -i -o github.com/goradd/got/test/template -I github.com/goradd/got/test/src/inc2:github.com/goradd/got/test/src/inc:github.com/goradd/got/test/src/inc/testInclude4.inc -d github.com/goradd/got/test/src"
 
 	main()
 
@@ -55,13 +57,49 @@ func TestGot(t *testing.T) {
 }
 
 func Test_badIncludeFail(t *testing.T) {
+	resetTemplates()
+
 	ret := got.Run("./test/template", "", false, "", "", []string{"./test/src/failureTests/badInclude.got"})
-	assert.Equal(t, ret, 1)
+	assert.Equal(t, 1, ret)
 }
+
+func Test_badInclude2Fail(t *testing.T) {
+	resetTemplates()
+
+	ret := got.Run("./test/template", "", true, "", "", []string{"./test/src/failureTests/badInclude2.got"})
+	assert.Equal(t, 1, ret)
+}
+
+
+
 func Test_tooManyParams(t *testing.T) {
+	resetTemplates()
+
 	ret := got.Run("./test/template", "", false, "", "", []string{"./test/src/failureTests/tooManyParams.got"})
-	assert.Equal(t, ret, 1)
+	assert.Equal(t, 1, ret)
 }
 
+func Test_badGo2(t *testing.T) {
+	resetTemplates()
 
+	ret := got.Run("./test/template", "", true, "", "", []string{"./test/src/failureTests/badGo.got"})
+	assert.Equal(t, 1, ret)
+}
 
+func TestInfo(t *testing.T) {
+	resetTemplates()
+
+	// args is a global in the main package just for testing
+
+	args = "testEmpty"
+
+	main()
+
+}
+
+func resetTemplates() {
+	files,_ := filepath.Glob("./test/template/*.go")
+	for _,f := range files {
+		_ = os.Remove(f)
+	}
+}

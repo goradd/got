@@ -1,5 +1,8 @@
 {{define package}}template{{end package}}
 {{define name}}TestVars{{end name}}
+{{define imports}}
+	"html"
+{{end imports}}
 
 {{define body}}
 
@@ -10,6 +13,11 @@ Here is a number: {{i givesInt() }}
 And another: {{u givesUint() }}
 And a float: {{f 45/6 }}
 Stringer: {{v "something" }}
+Bytes: {{w []byte("else")}}
+Boolean: {{b 2 == 4/2}}
+
+Escaped: {{!= "This<>"}}
+That: {{!h "That\nThe Other"}}
 }}
 
 // Test for newlines here
@@ -17,8 +25,8 @@ for i := 0; i < 5; i++ {
 {{
     {{= "Num"}} = {{= strconv.Itoa(i) }}
 }}
-
 }
+
 
 {{# Here is a comment }}
 

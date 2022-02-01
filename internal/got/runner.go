@@ -112,10 +112,13 @@ func Run(outDir string,
 		}
 
 		// Default named block values
+		file,_ = filepath.Abs(file)
 		namedBlocks["templatePath"] = namedBlockEntry{file, 0}
 		namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0}
 		namedBlocks["templateRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)), 0}
 		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0}
+
+		newPath,_ = filepath.Abs(newPath)
 		namedBlocks["outPath"] = namedBlockEntry{newPath, 0}
 		namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0}
 		namedBlocks["outRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath)), 0}
@@ -207,18 +210,6 @@ func postProcess(file string, runImports bool) int {
 			} else if err2, ok2 := err.(*exec.ExitError); ok2 {
 				// Likely a syntax error in the resulting file
 				_,_ = fmt.Fprintln(os.Stderr, string(err2.Stderr))
-				return 1
-			}
-		}
-	} else {
-		_, err := sys.ExecuteShellCommand("go fmt " + file) // at least format it if we are not going to run imports on it
-		if err != nil {
-			if e, ok := err.(*exec.Error); ok {
-				_,_ = fmt.Fprintln(os.Stderr, "error running go fmt on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
-				return 1
-			} else if e2, ok2 := err.(*exec.ExitError); ok2 {
-				// Likely a syntax error in the resulting file
-				_,_ = fmt.Fprintln(os.Stderr, string(e2.Stderr))
 				return 1
 			}
 		}

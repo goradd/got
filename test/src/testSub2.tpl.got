@@ -3,6 +3,7 @@ package template
 import (
 	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
 )
 
 {{# Here we are redefining a previously defined block to make sure the defines are isolated.}}
@@ -14,10 +15,16 @@ func TestSub2(_w io.Writer) (err error) {
 {{
 	Print me: {{first}}.
 }}
+
+{{# Here we are using a block defined from the command line.}}
+
+{{put printYou}}
+
 	return
 }
 
 
+
 func init() {
-    registerTest(TestSub2, "TestSub2")
+    registry.RegisterTest(TestSub2, "TestSub2")
 }
