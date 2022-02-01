@@ -1,17 +1,19 @@
 package {{package}}
 
 import (
-	"bytes"
+	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
+	{{>? imports}}
 )
 
 
-func {{name}}(buf *bytes.Buffer) (err error) {
+func {{name}}(_w io.Writer) (err error) {
 
     {{body}}
     return
 }
 
 func init() {
-    registerTest({{name}}, "{{name}}")
+    registry.RegisterTest({{name}}, "{{name}}")
 }

@@ -1,8 +1,9 @@
 package template
 
 import (
-	"bytes"
+	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
 )
 
 {{< first }}
@@ -10,52 +11,54 @@ s := "Here is some go code."
 {{
 Here is some text to print. {{= s }}
 }}
-{{end}}
+{{end first}}
 
 {{define second 1}}
-buf.WriteString("$1")
-{{end}}
+if _,err = io.WriteString(_w, "$1"); err != nil {return}
+{{end second}}
 
-func TestSub(buf *bytes.Buffer) (err error) {
+func TestSub(_w io.Writer) (err error) {
 {{
 	Print me.
 }}
 
-	myTest2(buf)
-	myTest3(buf)
-	myTest4(buf)
+	if err = myTest2(_w); err != nil {return}
+	if err = myTest3(_w); err != nil {return}
+	if err = myTest4(_w); err != nil {return}
 	return
 }
 
-func myTest2(buf *bytes.Buffer) {
+func myTest2(_w io.Writer) (err error) {
 {{
 Substituted:
 }}
 {{> first }}
+return
 }
 
 
-func myTest3(buf *bytes.Buffer) {
+func myTest3(_w io.Writer) (err error) {
 {{
 Substituted:
 }}
 {{second Me}}
+return
 }
 
-{{define third 1}}{{g
-buf.WriteString("$1")
-}}
-{{end}}
+{{define third 1}}
+$1
+{{end third}}
 
-func myTest4(buf *bytes.Buffer) {
+func myTest4(_w io.Writer) (err error) {
 {{
 Substituted:
 {{third You}}
 Not Substituted:
 {{third}}
 }}
+return
 }
 
 func init() {
-    registerTest(TestSub, "TestSub")
+    registry.RegisterTest(TestSub, "TestSub")
 }

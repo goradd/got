@@ -1,14 +1,15 @@
 
-func anIncludeTest(buf bytes.Buffer) {
+func anIncludeTest(_w io.Writer) (err error) {
 {{
 	Print me.
 }}
+    return
 }
 
 {{< aBlock }}
 {{
     This is a named block.
 }}
-{{end}}
+{{end aBlock}}
 
-{{< name }}smallBlock{{end}}
+{{< name }}smallBlock{{end name}}

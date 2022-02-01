@@ -1,13 +1,14 @@
 package template
 
 import (
-	"bytes"
+	"io"
 	"fmt"
+	"github.com/goradd/got/test/registry"
 )
 
 {{: "testInclude.inc" }}
 
-func TestInclude(buf *bytes.Buffer) (err error) {
+func TestInclude(_w io.Writer) (err error) {
 {{
 The end.
 }}
@@ -38,5 +39,5 @@ The end.
 }
 
 func init() {
-    registerTest(TestInclude, "TestInclude")
+    registry.RegisterTest(TestInclude, "TestInclude")
 }

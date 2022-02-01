@@ -1,5 +1,5 @@
-{{define package}}template{{end}}
-{{define name}}TestVarsWithErr{{end}}
+{{define package}}template{{end package}}
+{{define name}}TestVarsWithErr{{end name}}
 
 
 {{define body}}
@@ -12,7 +12,7 @@ And a float: {{fe  givesFloatWithErr() }}
 }}
 
 {{# Here is a comment }}
-{{end}}
+{{end body}}
 
 {{: "runner.inc"}}
 

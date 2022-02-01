@@ -1,0 +1,18 @@
+{{define package}}template{{end package}}
+{{define name}}TestPredefines{{end name}}
+
+{{define body}}
+{{
+{{# templatePath}}
+{{templateName}}
+{{templateRoot}}
+{{templateParent}}
+{{# outPath}}
+{{outName}}
+{{outRoot}}
+{{outParent}}
+}}
+{{end body}}
+
+{{: "runner.inc" }}
+

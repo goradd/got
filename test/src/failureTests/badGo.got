@@ -1,0 +1,13 @@
+package template
+
+import (
+	"io"
+	"fmt"
+)
+
+func includeFailedTest(_w io.Writer) (err error) {
+{{
+abc
+}}
+
+

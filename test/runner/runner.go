@@ -1,11 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"github.com/goradd/got/test/registry"
+	_ "github.com/goradd/got/test/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"bytes"
-	"github.com/goradd/got/test/template"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func RunTemplates(outDir string) error {
 	buf := bytes.Buffer{}
 	var err error
 
-	for _,test := range template.Tests {
+	for _,test := range registry.Tests {
 		err = test.F(&buf)
 		if err != nil {
 			return err
@@ -37,5 +38,5 @@ func writeFile(b []byte, file string, outDir string) {
 	dir, _ = filepath.Abs(dir)
 	file = filepath.Join(outDir, file)
 
-	ioutil.WriteFile(file, b, os.ModePerm)
+	_ = ioutil.WriteFile(file, b, os.ModePerm)
 }

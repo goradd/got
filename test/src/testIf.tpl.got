@@ -1,41 +1,28 @@
-{{define package}}template{{end}}
-{{define name}}TestIf{{end}}
+{{define package}}template{{end package}}
+{{define name}}TestIf{{end name}}
 
 {{define body}}
-
-{{g
 a:= 1
 b := 1
-}}
 
 {{if a == b }}
-{{
     Hi there.
-}}
 {{if}}
 
 {{if a != b }}
-{{
     Hi there.
-}}
 {{else}}
-{{
     Bye there.
-}}
 {{if}}
 
 {{if a != b }}
-{{
     Hi there.
-}}
-{{else if a == b}}
-{{
+{{elseif a == b}}
     Be square.
-}}
 {{if}}
 
 
-{{end}}
+{{end body}}
 
 
 {{: "runner.inc"}}

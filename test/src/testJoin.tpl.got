@@ -1,0 +1,23 @@
+{{define package}}template{{end package}}
+{{define name}}TestJoin{{end name}}
+
+{{define body}}
+{{g
+
+items1 := []string{"a", "b", "c"}
+items2 := []int{5,6,7}
+
+}}
+
+{{join items1, "---\n" }}
+Item {{i _i }} = {{_j}}
+{{join}}
+{{
+
+}}
+{{join items2, ":" }}{{i _j}}{{join}}
+
+{{end body}}
+
+{{: "runner.inc" }}
+

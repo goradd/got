@@ -1,5 +1,5 @@
-{{define package}}template{{end}}
-{{define name}}TestNewline{{end}}
+{{define package}}template{{end package}}
+{{define name}}TestNewline{{end name}}
 
 
 {{# This file is designed to test specific situations around when newlines should or should not be generated. }}
@@ -25,6 +25,6 @@ But if I end a new tag with a newline {{i 10 }}
 consider it
 
 }}
-{{end}}
+{{end body}}
 
 {{: "runner.inc" }}

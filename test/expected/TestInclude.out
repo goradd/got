@@ -1,16 +1,14 @@
 The end.
     This is a named block.
 	<p>
-	Escaped html &lt;
+	Escaped html &lt; 
 	</p>
 
-This is text
-that is both escaped and has
-html paragraphs and breaks inserted.
-
-
+<p>This is text<br>
+that is both escaped and has<br>
+html paragraphs and breaks inserted.<br>
+</p>
 right
-
 &lt;html&gt;
 &lt;head&gt;
 
@@ -21,7 +19,6 @@ right
 &lt;/p&gt;
 &lt;/body&gt;
 &lt;/html&gt;
-
 <p>&lt;html&gt;<br>
 &lt;head&gt;</p>
 <p>&lt;/head&gt;<br>

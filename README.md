@@ -1,15 +1,13 @@
+https://img.shields.io/github/workflow/status/goradd/got/Go
 # GoT
 
 GoT (short for go templates) is a template engine that generates fast go templates. 
 
 It is similar to some other 
-template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that can get compiled 
+template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that is then compiled 
 into your program or a go plugin. This approach creates extremely fast templates, especially as
 compared to go's standard template engine. It also gives you much more freedom than Go's template
 engine, since at any time you can just switch to go code to do what you want.
-
-GoT's primary function is to support the developing goradd web framework, and that drives my
-design decisions. However, it is a standalone template engine that you may find useful. 
 
 - [Features](#features)
 - [Install](#install)
@@ -98,13 +96,21 @@ text mode.
 From within text mode, you can send out a go value by surrounding the go code with `{{` and `}}` tags without spaces
 separating the go code from the brackets.
 
-Text will get written to output by calling `buf.WriteString`. Got makes no assumptions
-as to how you declare the `buf` variable, it just needs to be available when the template text is declared.
-Usually you would do this by declaring a function at the top of your template that receives a 
-`buf *bytes.Buffer` parameter. After compiling the template output together with your program, you call
+In the resulting Go code, text will get written to output by calling:
+
+ ```_, err = io.WriteString(_w, <text>)``` 
+
+Got assumes that the `_w` variable
+is available and satisfies the io.Writer interface
+and optionally the io.StringWriter interface.
+Usually you would do this by declaring a function at the top of your template that looks like this:
+
+``` func f(_w io.Writer) (err error) ```
+
+After compiling the template output together with your program, you call
 this function to get the template output. 
 
-At a minimum, you will need to import the "bytes" package into the file with your template function.
+At a minimum, you will need to import the "io" package into the file with your template function.
 Depending on what tags you use, you might need to add 
 additional items to your import list. Those are mentioned below with each tag.
 
@@ -114,15 +120,16 @@ Here is how you might create a very basic template. For purposes of this example
 ```
 package template
 
-import "bytes"
+import "io"
 
-func OutTemplate(buf *bytes.Buffer) {
+func OutTemplate(_w io.Writer) (err error) {
 	var world string = "World"
 {{
 <p>
     Hello {{world}}!
 </p>
 }}
+  return // make sure the error gets returned
 }
 ```
 
@@ -137,15 +144,15 @@ you declared:
 package main
 
 import (
-	"bytes"
+	"io"
 	"os"
 	"mypath/template"
 )
 
 func main() {
 	var b bytes.Buffer 
-	template.OutTemplate(b)
-	b.WriteTo(os.Stdout)
+	_ = template.OutTemplate(b)
+	_,_ = b.WriteTo(os.Stdout)
 }
 ```
 
@@ -178,15 +185,15 @@ In this example file, note that we start in Go mode, copying the text verbatim t
 package test
 
 import (
-	"bytes"
+	"io"
 	"fmt"
 )
 
 type Translater interface {
-	Translate(string, *bytes.Buffer)
+	Translate(string) string
 }
 
-func staticTest(buf *bytes.Buffer) {
+func staticTest(_w io.Writer) {
 {{
 <p>
 {{! Escaped html < }}
@@ -215,9 +222,9 @@ From within any static text context described above you can switch into go conte
 
     {{g or {{go     Change to straight go code.
     
-Go code is copied verbatim to the final template. Use it to set up loops, call special processing function, etc.
+Go code is copied verbatim to the final template. Use it to set up loops, call special processing functions, etc.
 End go mode using the `}}` closing tag. You can also include any other GoT tag inside of Go mode,
-meaning you can next Go mode and all the other template tags.
+meaning you can nest Go mode and all the other template tags.
 
 #### Example
 ```
@@ -225,12 +232,9 @@ meaning you can next Go mode and all the other template tags.
 // switching back to go mode.
 {{ Here 
 {{go 
-buf.WriteString("is") 
+io.WriteString(_w, "is") 
 }} some code wrapping text escaping to go. }}
-
-
 ```
-
 
 ### Dynamic Text
 The following tags are designed to surround go code that returns a go value. The value will be 
@@ -264,7 +268,7 @@ the output.
     {{!=, {{!s or {{!string    HTML escape a go string
     {{!w or {{!bytes           HTML escape a byte slice
     {{!v or {{!stringer        HTML escape a Stringer
-    {{!h                       Escape a go string and and html format breaks and newlines
+    {{!h                       Escape a go string and html format breaks and newlines
 
 These tags require you to import the "html" package. The `{{!h` tag also requires the "strings" package.
 
@@ -297,7 +301,7 @@ func Tester(s string) (out string, err error) {
 }
 
 func OutTemplate(toPrint string, buf bytes.Buffer) error {
-{{=e Tester(toPrint) )}
+{{=e Tester(toPrint) }}
 }
 ```
 
@@ -324,7 +328,7 @@ Example: `{{: "myTemplate.inc" }}`
 Use `{{:!` to include a file that you surround with a `<pre>` tag to include a text file
 and have it appear in an html document looking the same. Use `{{:h` to include a file
 without the `<pre>` tags, but if the file uses extra spaces for indent, those spaces will
-not indent in the html.
+not indent in the html. These kinds of include files will not be searched for GoT commands.
  
 ### Defined Fragments
 
@@ -336,25 +340,33 @@ any time before it is included, including being defined in other include files. 
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed.
 
-    {{< fragName }} or {{define fragName }}                      Start a block called "fragName".
-    {{< fragName <count>}} or {{define fragName <count>}}        Start a block called "fragName" that will have <count> parameters.
-    {{> fragName param1,param2,...}} or                          Substitute this tag for the given defined fragment.
+    {{< fragName }} or {{define fragName }}                  Start a block called "fragName".
+    {{< fragName <count>}} or {{define fragName <count>}}    Start a block called "fragName" that will have <count> parameters.
+    {{> fragName param1,param2,...}} or                      Substitute this tag for the given defined fragment.
       {{put fragName param1,param2,...}} or just
       {{fragName param1,param2,...}}
+    {{>? fragName param1,param2,...}} or                     Substitute this tag for the given defined fragment, but if the fragment is not defined, leave blank.
+    {{put? fragName param1,param2,...}}
+
  
 If you attempt to use a fragment that was not previously defined, GoT will panic and stop compiling.
 
 param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
 If a parameter is not included when using a fragment, an empty value will be substituted for the parameter in the fragment.
+Use commas to separate parameters, including empty parameters.
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
-`{{end}}` tag. The end tag must be just like that, with no spaces inside the tag.
+`{{end fragName}}` tag. The end tag must be just like that, with no spaces after the fragName.
 
 The following fragments are predefined:
 * `{{templatePath}}` will result in the full path of the template file being processed
-* `{{templateName}}` will produce the base name of the template file, including any extensions
-* `{{templateRoot}}` will produce the base name of the template file without any extensions
-* `{{templateDir}}` will produce the directory name of the template file being processed, without the preceeding path
+* `{{templateName}}` will produce the base name of the template file being processed, including any extensions
+* `{{templateRoot}}` will produce the base name of the template file being processed without any extensions
+* `{{templateParent}}` will produce the directory name of the template file being processed, without the preceeding path
+* `{{outPath}}` will result in the full path of the output file being written
+* `{{outName}}` will produce the base name of the output file being written, including any extensions
+* `{{outRoot}}` will produce the base name of the output file being written without any extensions
+* `{{outParent}}` will produce the directory name of the output file being written, without the preceeding path
 
 Note that if you are looking at these from an included file, these will be the parent file. Multiple
 levels of includes will return the information for the top level file being processed. 
@@ -366,19 +378,19 @@ levels of includes will return the information for the top level file being proc
 <p>
 This is my html body.
 </p>
-{{end}}
+{{end hFrag}}
 
 {{< writeMe 2}}
 {{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
 {{g 
-if $2 {
-	buf.WriteString("$1")
+if "$2" != "" {
+	io.WriteString(_w, "$1")
 }
 }}
-{{end}}
+{{end writeMe}}
 
 
-func OutTemplate(buf bytes.Buffer) {
+func OutTemplate(_w io.Writer) (err error) {
 {{
 	<html>
 		<body>
@@ -387,7 +399,9 @@ func OutTemplate(buf bytes.Buffer) {
 	</html>
 }}
 
-{{writeMe "Help Me!", true}}
+{{writeMe "Help Me!", a}}
+{{writeMe "Help Me!", }}
+ return
 }
 ```
 
@@ -397,25 +411,16 @@ func OutTemplate(buf bytes.Buffer) {
 
 These tags and anything enclosed in them is removed from the compiled template.
 
-### Backup Tags
-
-    {{- }} or {{backup }}                 Backs up one character.
-    {{- <count>}} or {{backup <count>}}   Back up <count> characters.
-
-Sometimes you find that you need to remove text that has already been sent to a template. Include
-one of the above backup tags to do that.
-
-For example, `{{- 4}}` will back up 4 characters. Also, if you end a line with this tag, it will join the line with the 
-next line.  
-
 ### Go Block Tags
     
-    {{if <go condition>}}<block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
-    {{if <go condition>}}<block>{{else}}<block>{{if}}                      Go "if" and "else" statement.
-    {{if <go condition>}}<block>{{else if <go condition>}}<block>{{if}}    Go "if" and "else if" statement.
-    {{for <go condition>}}<block>{{for}}                                   This is a convenience tag for surrounding text with a go "for" statement.
+    {{if <go condition>}}<text block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
+    {{if <go condition>}}<text block>{{else}}<text block>{{if}}                      Go "if" and "else" statement.
+    {{if <go condition>}}<text block>{{elseif <go condition>}}<text block>{{if}}    Go "if" and "else if" statement.
+    {{for <go condition>}}<text block>{{for}}                                   This is a convenience tag for surrounding text with a go "for" statement.
 
-These tags are substitutes for switching into GO mode and using a `for` or `if` statement. 
+These tags are substitutes for switching into GO mode and using a `for` or `if` statements. 
+<text block> will be in text mode to begin with, so that whatever you put there
+will be output, but you can switch to go mode if needed.
 
 ####Example
 
@@ -426,6 +431,27 @@ These tags are substitutes for switching into GO mode and using a `for` or `if` 
 {{for}}
 }}
 ```
+### Join Tags
+
+    {{join <slice>, <string>}}<text block>{{join}}    Joins the items of a slice with a string.
+
+Join will execute the <text block> for each item of <slice>. Within <text block> the variable
+"_i" will be an integer representing the index of the slice item, and "_j" will be the
+item itself. <text block> starts in text mode, but you can put GoT commands in it. <string> will be output
+between the output of each item, creating an effect similar to joining a slice of strings.
+
+
+####Example
+
+```
+{{g
+  items := []string{"a", "b", "c"}
+}}
+{{join items,", "}}
+{{ {{_i}} = {{_j}}}}
+{{join}}
+```
+
 
 ### Strict Text Block Tag
 
@@ -436,13 +462,16 @@ you can use:
     {{begin *endTag*}} Starts a strict text block and turns off the got parser. 
     
 One thing this is useful for is to use Got to generate Got code.
-End the block with a `{{*endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. The following
-example will output the entire second line of code with no changes, including all brackets:
+End the block with a `{{end *endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. 
+There can be no space between the endTag and the final brackets
+The following example will output the entire second line of code with no changes, 
+including all brackets:
 
 ```
 {{begin mystrict}}
-{{! This is verbatim code }}{{< not included}}
-{{mystrict}}
+{{! This is verbatim code }}
+{{< all included}}
+{{end mystrict}}
 ```
 
 ## Bigger Example
@@ -486,7 +515,7 @@ func writeTemplate(ctx context.Context, buf *bytes.Buffer) {
 <p>
 The caller is: {{=s ctx.Value("something") }}
 </p>
-{{end}}
+{{end body}}
 
 {{# include the html template. Since the template is html, we need to put ourselves in static text mode first }}
 {{ 
@@ -543,3 +572,15 @@ GoT was influenced by:
 - [hero](https://github.com/shiyanhui/hero)
 - [fasttemplate](https://github.com/valyala/fasttemplate)
 - [Rob Pike's Lexing/Parsing Talk](https://www.youtube.com/watch?v=HxaD_trXwRE)
+
+## Syntax Changes
+
+###v0.10.0
+This was a major rewrite with the following changes:
+- defined fragments end with {{end fragName}} tags, rather than {{end}} tags
+- {{else if ...}} is now {{elseif ...}}
+- {{join }} tag will join items with a string
+- The backup tag {{- has been removed
+- Reorganized the lexer and parser to be easier to debug
+- Added many more unit tests. Code coverage > 90%.
+- The output is sent to an io.Writer called _w. This allows more flexible use of the templates, and the ability to wrap them with middleware
