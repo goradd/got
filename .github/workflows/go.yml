@@ -31,7 +31,7 @@ jobs:
       run: go install
 
     - name: Test Main
-      run: go test
+      run: go test -v
       
     - name: Test Internal
-      run: go test ./internal/got
+      run: go test -v ./internal/got
