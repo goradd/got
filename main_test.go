@@ -86,6 +86,14 @@ func Test_badGo2(t *testing.T) {
 	assert.Equal(t, 1, ret)
 }
 
+func Test_badBlock(t *testing.T) {
+	resetTemplates()
+
+	ret := got.Run("./test/template", "", true, "", "", []string{"./test/src/failureTests/badBlock.got"})
+	assert.Equal(t, 1, ret)
+}
+
+
 func TestInfo(t *testing.T) {
 	resetTemplates()
 

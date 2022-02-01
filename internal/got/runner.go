@@ -13,6 +13,7 @@ import (
 type namedBlockEntry struct {
 	text string
 	paramCount int
+	ref locationRef
 }
 
 var modules map[string]string
@@ -113,16 +114,16 @@ func Run(outDir string,
 
 		// Default named block values
 		file,_ = filepath.Abs(file)
-		namedBlocks["templatePath"] = namedBlockEntry{file, 0}
-		namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0}
-		namedBlocks["templateRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)), 0}
-		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0}
+		namedBlocks["templatePath"] = namedBlockEntry{file, 0, locationRef{}}
+		namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0, locationRef{}}
+		namedBlocks["templateRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)), 0, locationRef{}}
+		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
 
 		newPath,_ = filepath.Abs(newPath)
-		namedBlocks["outPath"] = namedBlockEntry{newPath, 0}
-		namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0}
-		namedBlocks["outRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath)), 0}
-		namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0}
+		namedBlocks["outPath"] = namedBlockEntry{newPath, 0, locationRef{}}
+		namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0, locationRef{}}
+		namedBlocks["outRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath)), 0, locationRef{}}
+		namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0, locationRef{}}
 
 		var a astType
 		a, err = buildAst(file, namedBlocks)

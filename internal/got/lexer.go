@@ -200,6 +200,12 @@ func (l *lexer) emit(i tokenItem) {
 	}
 	i.callStack = append(i.callStack, ref)
 
+	// if we are in a block, also add the location of the block to the call stack
+	if l.blockName != "" {
+		b, _ := l.getNamedBlock(l.blockName)
+		i.callStack = append(i.callStack, b.ref)
+	}
+
 	l.items <- i
 	l.ignore()
 }
@@ -853,7 +859,12 @@ func (l *lexer) addNamedBlock (name string, text string, paramCount int) error {
 	if l.namedBlocks == nil {
 		l.namedBlocks = make(map[string]namedBlockEntry)
 	}
-	l.namedBlocks[name] = namedBlockEntry{text, paramCount}
+	l.namedBlocks[name] = namedBlockEntry{text, paramCount, locationRef{
+		fileName: l.fileName,
+		blockName: l.blockName,
+		lineNum: l.lineNum,
+		offset: l.lineRuneNum,
+	}}
 	return nil
 }
 
