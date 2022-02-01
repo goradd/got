@@ -223,7 +223,7 @@ func (a *astWalker) outputValue(item tokenItem) (err error) {
 `,item.val,
 			fmt.Sprintf(writer, fmt.Sprintf(formatter, "_v")))
 	} else {
-		out = fmt.Sprintf("\n%s\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, item.val)))
+		out = fmt.Sprintf("\n if _,err = %s; err != nil {return}\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, item.val)))
 	}
 	_,err = io.WriteString(a.w, out)
 	a.previousOutputEndedInNewline = false
