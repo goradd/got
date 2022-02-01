@@ -54,13 +54,14 @@ func TestGot(t *testing.T) {
 	}
 }
 
-func TestFailures(t *testing.T) {
-	// args is a global in the main package just for testing
-
-	args = "-i -o github.com/goradd/got/test/template -github.com/goradd/got/test/src/failureTests/"
-
-	ret := got.Run("./test/template", "", false, "", "", []string{"./test/src/failureTests/noTerm.got"})
+func Test_badIncludeFail(t *testing.T) {
+	ret := got.Run("./test/template", "", false, "", "", []string{"./test/src/failureTests/badInclude.got"})
 	assert.Equal(t, ret, 1)
 }
+func Test_tooManyParams(t *testing.T) {
+	ret := got.Run("./test/template", "", false, "", "", []string{"./test/src/failureTests/tooManyParams.got"})
+	assert.Equal(t, ret, 1)
+}
+
 
 

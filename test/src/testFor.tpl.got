@@ -1,0 +1,19 @@
+{{define package}}template{{end package}}
+{{define name}}TestFor{{end name}}
+
+{{define body}}
+{{g
+items1 := []string{"a", "b", "c"}
+items2 := []int{5,6,7}
+}}
+{{for _i,_j := range items1 }}
+Item {{i _i }} = {{_j}}
+{{for}}
+{{
+
+}}
+{{for _,_j := range items2}}{{i _j}}:{{for}}
+{{end body}}
+
+{{: "runner.inc" }}
+
