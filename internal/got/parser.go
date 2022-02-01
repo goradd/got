@@ -1,5 +1,10 @@
 package got
 
+import (
+	"fmt"
+	"strings"
+)
+
 type parser struct {
 	lexer *lexer
 }
@@ -11,6 +16,12 @@ func parse(l *lexer) tokenItem {
 	topItem.childItems, endItem = p.parseRun()
 	// if we have an error, extract all the errors from the channel and combine them
 	if endItem.typ == itemError {
+		if endItem.blockName != "" {
+			endItem.val = fmt.Sprintf("*** Error at line %d, position %d of block %s: %s", endItem.lineNum, endItem.runeNum, endItem.blockName, endItem.val)
+		} else {
+			endItem.val = fmt.Sprintf("*** Error at line %d, position %d of file %s: %s", endItem.lineNum, endItem.runeNum, endItem.fileName, endItem.val)
+		}
+
 		for item := range p.lexer.items {
 			if item.typ == itemError {
 				endItem.val += "\n" + item.val
@@ -107,7 +118,7 @@ func (p *parser) parseValue(item tokenItem) tokenItem {
 	runItem := <- p.lexer.items
 	switch runItem.typ {
 	case itemRun:
-		item.val = runItem.val
+		item.val = strings.TrimSpace(runItem.val)
 	case itemEnd:
 		item.typ = itemError
 		item.val = "missing value"
@@ -144,7 +155,7 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 		conditionItem := <-p.lexer.items
 		switch conditionItem.typ {
 		case itemRun:
-			item.val = conditionItem.val
+			item.val = strings.TrimSpace(conditionItem.val)
 		case itemEnd:
 			item.typ = itemError
 			item.val = "missing condition in if statement"
@@ -258,7 +269,7 @@ func (p *parser) parseFor(item tokenItem) tokenItem {
 	conditionItem := <-p.lexer.items
 	switch conditionItem.typ {
 	case itemRun:
-		item.val = conditionItem.val
+		item.val = strings.TrimSpace(conditionItem.val)
 	case itemEnd:
 		item.typ = itemError
 		item.val = "missing condition in for statement"

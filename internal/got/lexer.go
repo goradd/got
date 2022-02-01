@@ -35,12 +35,16 @@ type stateFn func(*lexer) stateFn
 
 // lex opens the file and returns a lexer that will emit tokens on
 // the lexer's channel
-func lexFile(fileName string, reader io.Reader, relPaths ...string) *lexer {
+func lexFile(fileName string,
+	reader io.Reader,
+	namedBlocks map[string]namedBlockEntry,
+	relPaths ...string) *lexer {
 	l := &lexer{
 		input:    bufio.NewReader(reader),
 		fileName: fileName,
 		items:    make(chan tokenItem),
 		relativePaths: relPaths,
+		namedBlocks: namedBlocks, // use named blocks passed in. This will add to the parent map.
 	}
 
 	go l.run()
@@ -48,11 +52,12 @@ func lexFile(fileName string, reader io.Reader, relPaths ...string) *lexer {
 }
 
 // lex treats the given string as a block to be inserted
-func lexBlock(blockName string, content string) *lexer {
+func lexBlock(blockName string, content string, namedBlocks map[string]namedBlockEntry) *lexer {
 	l := &lexer{
 		input:    bufio.NewReader(strings.NewReader(content)),
 		blockName: blockName,
 		items:    make(chan tokenItem),
+		namedBlocks: namedBlocks,
 	}
 
 	go l.run()
@@ -74,7 +79,6 @@ func lexStart(l *lexer) stateFn {
 }
 
 func lexRun(l *lexer)  stateFn {
-	l.ignoreWhiteSpace()
 	l.acceptRun()
 	l.emitRun()
 	if l.isAtCloseTag() {
@@ -165,19 +169,14 @@ func lexTag(l *lexer)  stateFn {
 	case itemComment:
 		return l.lexComment()
 
-	case itemText:
-		newline := isEndOfLine(l.peek())
-		l.ignoreOneSpace()
-		i.newline = newline
-		l.emit(i)
-		return lexRun
-
 	case itemJoin:
 		return l.lexJoin()
 
 	default:
 		l.emit(i)
-		l.ignoreWhiteSpace()
+		if i.typ != itemEnd && i.typ != itemEndBlock {
+			l.ignoreOneSpace()
+		}
 		return lexRun
 	}
 }
@@ -209,7 +208,6 @@ func (l *lexer) emitRun() {
 }
 
 func (l *lexer) lexStrictBlock() stateFn {
-	newline := isEndOfLine(l.peek())
 	l.ignoreOneSpace()
 	l.acceptRun()
 	endToken := l.currentString()
@@ -224,7 +222,7 @@ func (l *lexer) lexStrictBlock() stateFn {
 		l.emitError("no strict end block found")
 		return nil
 	}
-	l.emit(tokenItem{typ: itemStrictBlock, newline:newline})
+	l.emit(tokenItem{typ: itemStrictBlock})
 	l.ignoreN(len(endToken))
 	return lexRun
 }
@@ -316,7 +314,7 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 	}()
 
 
-	l2 := lexFile(foundPath, inFile, relPaths...)
+	l2 := lexFile(foundPath, inFile, l.namedBlocks, relPaths...)
 
 	for item := range l2.items {
 		l.emit(item) // send items as if they are part of current file
@@ -344,7 +342,7 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 		return nil
 	}
 
-	name := l.currentString()
+	name := strings.TrimSpace(l.currentString())
 	l.ignoreCloseTag()
 
 	items := strings.Split(name," ")
@@ -376,7 +374,7 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 
 	l.acceptUntil(endBlock)
 	if !l.isAt(endBlock) {
-		l.emitError("no end block found")
+		l.emitError("no end block found for block: " + name)
 	}
 	if err := l.addNamedBlock(name, l.currentString(), paramCount); err != nil {
 		l.emitError(err.Error())
@@ -428,7 +426,7 @@ func (l *lexer) lexSubstitute() stateFn {
 		return nil
 	}
 
-	l2 := lexBlock(name, processedBlock)
+	l2 := lexBlock(name, processedBlock, l.namedBlocks)
 
 	for item := range l2.items {
 		l.emit(item) // send items as if they are part of current file
@@ -534,6 +532,7 @@ func (l *lexer) lexJoin() stateFn {
 // back a nil pointer that will be the next state, terminating l.nextItem.
 func (l *lexer) emitError(format string, args ...interface{}) {
 	line,pos := l.calcCurLineNum()
+	line++ // convert to 1-based lines
 	if l.blockName != "" {
 		s := fmt.Sprintf("*** Error at line %d, position %d of block %s: ", line, pos, l.blockName)
 		l.items <- tokenItem{typ: itemError, val: s + fmt.Sprintf(format, args...)}
@@ -574,9 +573,9 @@ func (l *lexer) isAtOpenTag() bool {
 	return l.isAt(tokBegin)
 }
 
-// Test if we are at a close tag. If a close tag is preceded by a space char, the space char is part of the tag.
+// Test if we are at a close tag.
 func (l *lexer) isAtCloseTag() bool {
-	return l.isAt(tokEnd) || l.isAt(tokEndWithSpace)
+	return l.isAt(tokEnd)
 }
 
 func (l *lexer) isAt(pattern string) bool {
@@ -727,7 +726,6 @@ func (l *lexer) ignore() {
 }
 
 func (l *lexer) calcCurLineNum() (lineNum, runeNum int) {
-	lineNum = l.lineNum
 	runeNum = l.lineRuneNum
 	for _, c := range l.curBuffer {
 		if isEndOfLine(c) {
@@ -780,24 +778,13 @@ func (l *lexer) ignoreWhiteSpace() {
 	}
 }
 
-// ignoreOneSpace ignores one space, INCLUDING white space characters.
+// ignoreOneSpace ignores one space, NOT including return characters.
 func (l *lexer) ignoreOneSpace() {
 	l.ignore()
 	r := l.next()
 	switch {
 	case r == eof:fallthrough
 	case r == errRune:
-		return
-	case r == '\r':
-		r = l.next()
-		if r == '\n' {
-			l.ignore()
-		} else {
-			l.backup()
-		}
-		return
-	case r == '\n':
-		l.ignore()
 		return
 	case isSpace(r):
 		l.ignore()
@@ -833,12 +820,8 @@ func (l *lexer) ignoreNewline() {
 }
 
 func (l *lexer) ignoreCloseTag() {
-	l.ignore()
 	if l.isAtCloseTag() {
-		r := l.next()
-		if r == ' ' {
-			l.next() // should be a close tag
-		}
+		l.next()
 		l.next()
 		l.ignore()
 	}
@@ -877,8 +860,6 @@ func (l *lexer) addNamedBlock (name string, text string, paramCount int) error {
 }
 
 func (l *lexer) getNamedBlock (name string) (block namedBlockEntry, ok bool) {
-	if block, ok = l.namedBlocks[name]; !ok {
-		block, ok = includeNamedBlocks[name]
-	}
+	block, ok = l.namedBlocks[name]
 	return
 }

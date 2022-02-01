@@ -1,12 +1,12 @@
 package {{package}}
 
 import (
-	"bytes"
+	"io"
 	"fmt"
 )
 
 
-func {{name}}(buf *bytes.Buffer) (err error) {
+func {{name}}(_w io.Writer) (err error) {
 
     {{body}}
     return

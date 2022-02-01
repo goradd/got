@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/goradd/gofile/pkg/sys"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -25,7 +27,16 @@ func TestGot(t *testing.T) {
 	comparePath := filepath.Join(testPath, "compare")
 	expectedPath := filepath.Join(testPath, "expected")
 	cmd := "go run " + runnerPath + " " + comparePath
-	sys.ExecuteShellCommand(cmd)
+	if _, err := sys.ExecuteShellCommand(cmd); err != nil {
+		if e, ok := err.(*exec.Error); ok {
+			_, _ = fmt.Fprintln(os.Stderr, "error testing runner.go :"+e.Error()) // perhaps goimports is not installed?
+			os.Exit(1)
+		} else if err2, ok2 := err.(*exec.ExitError); ok2 {
+			// Likely a syntax error in the resulting file
+			_, _ = fmt.Fprintln(os.Stderr, string(err2.Stderr))
+			os.Exit(1)
+		}
+	}
 
 	// compare the outputs and report differences
 

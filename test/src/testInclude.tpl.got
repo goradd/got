@@ -7,7 +7,7 @@ import (
 
 {{: "testInclude.inc" }}
 
-func TestInclude(buf *bytes.Buffer) (err error) {
+func TestInclude(_w io.Writer) (err error) {
 {{
 The end.
 }}

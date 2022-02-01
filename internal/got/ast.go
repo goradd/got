@@ -18,9 +18,15 @@ type  astWalker struct {
 	escapeText bool
 	htmlBreaks bool
 	translate bool
+
+	// previousOutputEndedInNewline help us concatenate multiple blocks so they don't get extra lines
+	previousOutputEndedInNewline bool
 }
 
-func buildAst(fileName string) (ret astType, l *lexer, err error) {
+// buildAst creates an symbol tree for the given file.
+//
+// named blocks are previously named blocks to use, and that are added to during the process
+func buildAst(fileName string, namedBlocks map[string]namedBlockEntry) (ret astType, err error) {
 	var inFile *os.File
 	inFile,err = os.Open(fileName)
 	if err != nil {
@@ -29,7 +35,8 @@ func buildAst(fileName string) (ret astType, l *lexer, err error) {
 	defer func() {
 		_ = inFile.Close()
 	}()
-	l = lexFile(fileName, inFile)
+
+	l := lexFile(fileName, inFile, namedBlocks)
 	ret.topItem = parse(l)
 	if ret.topItem.typ == itemError {
 		err = fmt.Errorf(ret.topItem.val)
@@ -52,7 +59,7 @@ func outputAsts(outPath string, asts ...astType ) error {
 	}
 
 	for _,ast := range asts {
-		walker := astWalker{w: outFile}
+		walker := astWalker{w: outFile, previousOutputEndedInNewline: true}
 		err = walker.walk(ast.topItem)
 		if err != nil {
 			break
@@ -73,6 +80,9 @@ func (a *astWalker) walk(item tokenItem) error {
 	case itemText:
 		defer a.setTextMode(a.textMode, a.escapeText, a.htmlBreaks, a.translate)
 		a.setTextMode(true, item.escaped, item.htmlBreaks, item.translate)
+		if len(item.childItems) == 0 {
+			return nil
+		}
 		return a.walkItems(item.childItems)
 
 	case itemStrictBlock:
@@ -130,7 +140,13 @@ func (a *astWalker) outputText(val string) (err error) {
 	if val == "" {
 		return
 	}
-
+	if a.previousOutputEndedInNewline && val[0] == '\n' {
+		val = val[1:]
+		if val == "" {
+			return
+		}
+	}
+	a.previousOutputEndedInNewline = val[len(val) - 1] == '\n'
 	if a.escapeText {
 		val = html.EscapeString(val)
 		if a.htmlBreaks {
@@ -143,11 +159,10 @@ func (a *astWalker) outputText(val string) (err error) {
 		}
 	}
 	if a.translate {
-		// translating html quoted text really doesn't make sense, but hey
-		_, err = io.WriteString(a.w, "\nt.Translate(" + quoteText(val) + ", buf)\n")
-
+		// Yes, we may be translating html encoded text here.
+		_, err = io.WriteString(a.w, "\nif _,err = io.WriteString(_w, t.Translate(" + quoteText(val) + ")); err != nil {return}\n")
 	} else {
-		_, err = io.WriteString(a.w, "\nbuf.WriteString(" + quoteText(val) + ")\n")
+		_, err = io.WriteString(a.w, "\nif _,err = io.WriteString(_w, " + quoteText(val) + "); err != nil {return}\n")
 	}
 	return
 }
@@ -169,45 +184,49 @@ func (a *astWalker) outputGo(code string) (err error) {
 // outputValue sends a particular value to output
 // outputValue overrides the current text environment, but does not change it
 func (a *astWalker) outputValue(item tokenItem) (err error) {
-	writer := "buf.WriteString(%s)"
+	writer := `io.WriteString(_w, %s)`
 
 	if item.htmlBreaks { // assume escaped too
-		writer = `buf.WriteString(strings.Replace(html.EscapeString(%s), "\n", "<br>\n", -1))`
+		writer = `io.WriteString(_w, strings.Replace(html.EscapeString(%s), "\n", "<br>\n", -1))`
 	} else if item.escaped {
-		writer = "buf.WriteString(html.EscapeString(%s))"
+		writer = `io.WriteString(_w, html.EscapeString(%s)); err != nil`
 	}
 
 	var formatter string
 
 	switch item.typ {
 	case itemBool:
-		formatter = "strconv.FormatBool(%s)"
+		formatter = `strconv.FormatBool(%s)`
 	case itemInt:
-		formatter = "strconv.Itoa(%s)"
+		formatter = `strconv.Itoa(%s)`
 	case itemUInt:
-		formatter = "strconv.FormatUint(uint64(%s), 10)"
+		formatter = `strconv.FormatUint(uint64(%s), 10)`
 	case itemInterface:
-		formatter = "fmt.Sprint(%s)"
+		formatter = `fmt.Sprint(%s)`
 	case itemFloat:
-		formatter = "strconv.FormatFloat(float64(%s), 'g', -1, 64)"
+		formatter = `strconv.FormatFloat(float64(%s), 'g', -1, 64)`
 	case itemBytes:
-		formatter = "string(%s[:])"
+		formatter = `string(%s[:])`
 	default:
-		formatter = "%s"
+		formatter = `%s`
 	}
 
 	var out string
 
 	if item.withError {
-		out = fmt.Sprintf(
-			"\n{\nv, err := %s\n"+
-				"%s\n"+
-				"if err != nil { return err}\n}\n", item.val,
-			fmt.Sprintf(writer, fmt.Sprintf(formatter, "v")))
+		out = fmt.Sprintf(`
+{
+	_v,_err2 := %s
+	if _,err = %s; err != nil {return}
+	if _err2 != nil {return err}
+}
+`,item.val,
+			fmt.Sprintf(writer, fmt.Sprintf(formatter, "_v")))
 	} else {
 		out = fmt.Sprintf("\n%s\n", fmt.Sprintf(writer, fmt.Sprintf(formatter, item.val)))
 	}
 	_,err = io.WriteString(a.w, out)
+	a.previousOutputEndedInNewline = false
 	return
 }
 
@@ -218,26 +237,30 @@ func quoteText(val string) string {
 	return "`" + strings.Replace(val, "`", "` + \"`\" + `", -1) + "`"
 }
 
-func (a *astWalker) outputIf(item tokenItem) (err error) {
-	for _,ifItem := range item.childItems {
+func (a *astWalker) outputIf(topItem tokenItem) (err error) {
+	for _,ifItem := range topItem.childItems {
 		switch ifItem.typ {
 		case itemIf:
-			_, err = fmt.Fprintf(a.w, "\nif %s {\n", item.val)
+			_, err = fmt.Fprintf(a.w, "\nif %s {\n", ifItem.val)
 		case itemElseIf:
-			_,err = fmt.Fprintf(a.w, "\n} else if %s {\n", item.val)
+			_,err = fmt.Fprintf(a.w, "\n} else if %s {\n", ifItem.val)
 		case itemElse:
 			_,err = fmt.Fprintf(a.w, "\n} else {\n")
 		}
 		if err != nil {return err}
 
-		if err = a.walkItems(item.childItems); err != nil {return err}
-		if _,err = fmt.Fprintf(a.w, "\n}\n"); err != nil {return err}
+		defer a.setTextMode(a.textMode, a.escapeText, a.htmlBreaks, a.translate)
+		a.setTextMode(true, false, false, false)
+		if err = a.walkItems(ifItem.childItems); err != nil {return err}
 	}
+	if _,err = fmt.Fprintf(a.w, "\n}\n"); err != nil {return err}
 	return
 }
 
 func (a *astWalker) outputFor(item tokenItem) (err error) {
 	_, err = fmt.Fprintf(a.w, "\nfor %s {\n", item.val)
+	defer a.setTextMode(a.textMode, a.escapeText, a.htmlBreaks, a.translate)
+	a.setTextMode(true, false, false, false)
 	if err = a.walkItems(item.childItems); err != nil {return err}
 	if _,err = fmt.Fprintf(a.w, "\n}\n"); err != nil {return err}
 	return
@@ -255,7 +278,7 @@ for _i,_j := range %s {
 	}
 	_,err = fmt.Fprintf(a.w, `
 	if _i < len(%s) - 1 {
-		buf.WriteString(%q)
+		if _, err = io.WriteString(_w, %q); err != nil {return}
 	}
 }`, item.params["slice"].val, item.params["joinString"].val)
 	return

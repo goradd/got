@@ -68,27 +68,6 @@ func TestSplitParamsError(t *testing.T) {
 	}
 }
 
-func Test_lexBlock(t *testing.T) {
-	type args struct {
-		blockName string
-		content   string
-	}
-	tests := []struct {
-		name string
-		args args
-		want *lexer
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := lexBlock(tt.args.blockName, tt.args.content); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("lexBlock() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_lexer_currentLen(t *testing.T) {
 	l := newTestLexer("")
 	assert.Equal(t, 0, l.currentLen())
@@ -134,11 +113,6 @@ func Test_lexer_ignoreCloseTag(t *testing.T) {
 	l.ignoreCloseTag()
 	l.acceptRun()
 	assert.Equal(t, "abc", l.currentString())
-
-	l = newTestLexer(" }}abc")
-	l.ignoreCloseTag()
-	l.acceptRun()
-	assert.Equal(t, "abc", l.currentString())
 }
 
 func Test_lexer_ignoreNewline(t *testing.T) {
@@ -173,8 +147,8 @@ func Test_lexer_ignoreOneSpace(t *testing.T) {
 		{"empty", "", ""},
 		{"no space", "abc123", "abc123"},
 		{"space", " abc123", "abc123"},
-		{"newline", "\nabc123", "abc123"},
-		{"win new line", "\r\nabc123", "abc123"},
+		{"newline", "\nabc123", "\nabc123"},
+		{"win new line", "\r\nabc123", "\r\nabc123"},
 		{"fake win new line", "\rabc123", "\rabc123"},
 		{"mid space", "abc 123", "abc 123"},
 	}
@@ -424,7 +398,7 @@ func Test_lexer_peek(t *testing.T) {
 }
 
 func runBlockLexer(content string) (ret []tokenItem, l *lexer) {
-	l = lexBlock("test", content)
+	l = lexBlock("test", content, nil)
 
 	for tok := range l.items {
 		ret = append(ret, tok)
@@ -445,20 +419,21 @@ func Test_lexTypes(t *testing.T) {
 		{"run with text", "abc{{ 123 }}", []tokenType{itemRun, itemText, itemRun, itemEnd}},
 		{"go token not terminated", "{{g abc", []tokenType{itemGo, itemRun}},
 		{"go token terminated", "{{g abc}}", []tokenType{itemGo, itemRun, itemEnd}},
-		{"go with text", "{{g abc {{ 123 }} }}", []tokenType{itemGo, itemRun, itemText, itemRun, itemEnd, itemEnd}},
-		{"go with text", "{{g abc {{ 123 }} }}", []tokenType{itemGo, itemRun, itemText, itemRun, itemEnd, itemEnd}},
+		{"go with text", "{{g abc {{ 123 }} }}", []tokenType{itemGo, itemRun, itemText, itemRun, itemEnd, itemRun, itemEnd}},
+		{"go with text", "{{g abc {{ 123 }} }}", []tokenType{itemGo, itemRun, itemText, itemRun, itemEnd, itemRun, itemEnd}},
 		{"go value", "{{abc}}", []tokenType{itemInterface, itemRun, itemEnd}},
 		{"strict block", "{{begin abc}} 123 {{g }} {{end abc}}", []tokenType{itemStrictBlock}},
 		{"strict block error 1", "{{begin abc {{sf}} }} 123 {{g }} {{end abc}}", []tokenType{itemError}},
 		{"strict block error 2", "{{begin abc}} 123 {{g }} {{end abcd}}", []tokenType{itemError}},
 		{"comment", "{{// adfaf }}abc", []tokenType{itemRun}},
-		{"join", "{{join a,b }}c{{join}}", []tokenType{itemJoin, itemParam, itemParam, itemEnd, itemRun,itemEndBlock}},
+		{"join", "{{join a, b }}c{{join}}", []tokenType{itemJoin, itemParam, itemParam, itemEnd, itemRun,itemEndBlock}},
 		{"join error", "{{join a,\"b }}c{{join}}", []tokenType{itemJoin, itemError}},
 		{"join error 2", "{{join a,b {{d}} }}c{{join}}", []tokenType{itemJoin, itemError}},
 		{"if", "{{if a>b}}c{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock}},
 		{"else", "{{if a>b }}c{{else}}d{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock, itemRun, itemEndBlock}},
 		{"elseif", "{{if a>b }}c{{elseif c<d}}d{{if}}", []tokenType{itemIf, itemRun, itemEnd, itemRun,itemEndBlock, itemRun, itemEnd, itemRun, itemEndBlock}},
 		{"for", "{{for _,i := range g.ar }}c{{for}}", []tokenType{itemFor, itemRun, itemEnd, itemRun,itemEndBlock}},
+		{"int in text", "{{ {{i j}}}}", []tokenType{itemText, itemInt, itemRun, itemEnd, itemEnd}},
 	}
 
 	for _, tt := range tests {
@@ -481,17 +456,29 @@ func Test_lexTypes(t *testing.T) {
 }
 
 func Test_lexBlocks(t *testing.T) {
+
 	items, l := runBlockLexer("{{< abc}}123{{end abc}}")
 	assert.Len(t, items, 0)
 	assert.Equal(t, namedBlockEntry{"123", 0}, l.namedBlocks["abc"])
 
-	items, l = runBlockLexer("{{< abc}}123{{end abc}} {{< abc}}123{{end abc}}")
+	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< abc}}123{{end abc}}")
 	assert.Len(t, items, 1)
 	assert.Equal(t, items[0].typ, itemError)
 
-	items, l = runBlockLexer("{{< abc}}123{{end abc}} {{< def 2}}456{{end def}}")
+	items, l = runBlockLexer("{{< abc}}123{{end abc}}{{< def 2}}456{{end def}}")
 	assert.Len(t, items, 0)
 	assert.Equal(t, namedBlockEntry{"456", 2}, l.namedBlocks["def"])
+
+	items, l = runBlockLexer(`{{< abc}}
+123
+{{end abc}}
+{{< def 2}}
+456
+{{end def}}`)
+	assert.Len(t, items, 1)
+	assert.Equal(t, namedBlockEntry{"\n123\n", 0}, l.namedBlocks["abc"])
+	assert.Equal(t, namedBlockEntry{"\n456\n", 2}, l.namedBlocks["def"])
+
 
 	items, l = runBlockLexer("{{< abc}}123")
 	assert.Len(t, items, 1)
@@ -560,8 +547,8 @@ func Test_subsitute(t *testing.T) {
 		assert.Equal(t, items[0].val, "123d")
 	})
 
-	t.Run("2 param", func(t *testing.T) {
-		items, _ := runBlockLexer("{{< abc 2}}123$1$2{{end abc}}{{> abc d,e}}")
+	t.Run("2 param w space", func(t *testing.T) {
+		items, _ := runBlockLexer("{{< abc 2 }}123$1$2{{end abc}}{{> abc d,e}}")
 		assert.Equal(t, 1, len(items))
 		assert.Equal(t, items[0].typ, itemRun)
 		assert.Equal(t, items[0].val, "123de")
@@ -586,7 +573,75 @@ func Test_subsitute(t *testing.T) {
 		assert.Equal(t, items[1].typ, itemError)
 	})
 
+	t.Run("block in text", func(t *testing.T) {
+		items, _ := runBlockLexer("{{define abc}}123{{end abc}}{{ Here is {{abc}} }}")
+		assert.Equal(t, 5, len(items))
+	})
 
+}
 
+func Test_lexer_calcCurLineNum(t *testing.T) {
+	t.Run("one line", func(t *testing.T) {
+		l := newTestLexer("{{1234}}")
+		l.ignoreN(5)
+		line,c := l.calcCurLineNum()
+		assert.Equal(t, 0, line)
+		assert.Equal(t, 5, c)
+	})
 
+}
+
+func Test_Newlines(t *testing.T) {
+	t.Run("if", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{if a != b }}
+    Hi there.
+{{else}}
+    Bye there.
+{{if}}`)
+		assert.Equal(t, 7, len(items))
+		assert.Equal(t, items[1].val, `a != b `)
+		assert.Equal(t, `
+    Hi there.
+`, items[3].val)
+		assert.Equal(t, `
+    Bye there.
+`, items[5].val)
+	})
+
+	t.Run("after item", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{i 10 }}
+consider`)
+		assert.Equal(t, 4, len(items))
+		assert.Equal(t, items[3].val, `
+consider`)
+	})
+
+}
+
+func Test_Join(t *testing.T) {
+	t.Run("one line", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{join a,b}}c{{join}}`)
+		assert.Equal(t, 6, len(items))
+		assert.Equal(t, itemEndBlock, items[5].typ)
+		assert.Equal(t, "join", items[5].val)
+	})
+	t.Run("one line embedded item", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{join items2, ":" }}{{i _j}}{{join}}`)
+		assert.Equal(t, 8, len(items))
+		assert.Equal(t, itemEnd, items[6].typ)
+		assert.Equal(t, itemEndBlock, items[7].typ)
+		assert.Equal(t, "join", items[7].val)
+	})
+}
+
+func Test_LineCounting(t *testing.T) {
+	t.Run("one line", func(t *testing.T) {
+		items, _ := runBlockLexer(`{{g abc }}`)
+		assert.Equal(t, 3, len(items))
+		assert.Equal(t, itemGo, items[0].typ)
+		assert.Equal(t, 0, items[0].runeNum)
+
+		assert.Equal(t, itemRun, items[1].typ)
+		assert.Equal(t, 4, items[1].runeNum)
+	})
 }

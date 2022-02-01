@@ -98,13 +98,21 @@ text mode.
 From within text mode, you can send out a go value by surrounding the go code with `{{` and `}}` tags without spaces
 separating the go code from the brackets.
 
-Text will get written to output by calling `buf.WriteString`. Got makes no assumptions
-as to how you declare the `buf` variable, it just needs to be available when the template text is declared.
-Usually you would do this by declaring a function at the top of your template that receives a 
-`buf *bytes.Buffer` parameter. After compiling the template output together with your program, you call
+Text will get written to output by calling:
+
+ ```_, err = io.WriteString(_w, <text>)``` 
+
+Got assumes that the `_w` variable
+is available and satisfies the io.Writer interface
+and optionally the io.StringWriter interface.
+Usually you would do this by declaring a function at the top of your template that looks like this:
+
+``` func f(_w io.Writer) (err error) ```
+
+After compiling the template output together with your program, you call
 this function to get the template output. 
 
-At a minimum, you will need to import the "bytes" package into the file with your template function.
+At a minimum, you will need to import the "io" package into the file with your template function.
 Depending on what tags you use, you might need to add 
 additional items to your import list. Those are mentioned below with each tag.
 
@@ -114,15 +122,16 @@ Here is how you might create a very basic template. For purposes of this example
 ```
 package template
 
-import "bytes"
+import "io"
 
-func OutTemplate(buf *bytes.Buffer) {
+func OutTemplate(_w io.Writer) (err error) {
 	var world string = "World"
 {{
 <p>
     Hello {{world}}!
 </p>
 }}
+  return // make sure the error gets returned
 }
 ```
 
@@ -137,15 +146,15 @@ you declared:
 package main
 
 import (
-	"bytes"
+	"io"
 	"os"
 	"mypath/template"
 )
 
 func main() {
 	var b bytes.Buffer 
-	template.OutTemplate(b)
-	b.WriteTo(os.Stdout)
+	_ = template.OutTemplate(b)
+	_,_ = b.WriteTo(os.Stdout)
 }
 ```
 
@@ -178,15 +187,15 @@ In this example file, note that we start in Go mode, copying the text verbatim t
 package test
 
 import (
-	"bytes"
+	"io"
 	"fmt"
 )
 
 type Translater interface {
-	Translate(string, *bytes.Buffer)
+	Translate(string) string
 }
 
-func staticTest(buf *bytes.Buffer) {
+func staticTest(_w io.Writer) {
 {{
 <p>
 {{! Escaped html < }}
@@ -225,7 +234,7 @@ meaning you can next Go mode and all the other template tags.
 // switching back to go mode.
 {{ Here 
 {{go 
-buf.WriteString("is") 
+io.WriteString(_w, "is") 
 }} some code wrapping text escaping to go. }}
 
 
@@ -373,13 +382,13 @@ This is my html body.
 {{// The g tag here forces us to process the text as go code, no matter where the fragment is included }}
 {{g 
 if "$2" != "" {
-	buf.WriteString("$1")
+	io.WriteString(_w, "$1")
 }
 }}
 {{end writeMe}}
 
 
-func OutTemplate(buf bytes.Buffer) {
+func OutTemplate(_w io.Writer) (err error) {
 {{
 	<html>
 		<body>
@@ -390,6 +399,7 @@ func OutTemplate(buf bytes.Buffer) {
 
 {{writeMe "Help Me!", a}}
 {{writeMe "Help Me!", }}
+ return
 }
 ```
 
@@ -401,12 +411,14 @@ These tags and anything enclosed in them is removed from the compiled template.
 
 ### Go Block Tags
     
-    {{if <go condition>}}<block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
-    {{if <go condition>}}<block>{{else}}<block>{{if}}                      Go "if" and "else" statement.
-    {{if <go condition>}}<block>{{elseif <go condition>}}<block>{{if}}    Go "if" and "else if" statement.
-    {{for <go condition>}}<block>{{for}}                                   This is a convenience tag for surrounding text with a go "for" statement.
+    {{if <go condition>}}<text block>{{if}}                                     This is a convenience tag for surrounding text with a go "if" statement.
+    {{if <go condition>}}<text block>{{else}}<text block>{{if}}                      Go "if" and "else" statement.
+    {{if <go condition>}}<text block>{{elseif <go condition>}}<text block>{{if}}    Go "if" and "else if" statement.
+    {{for <go condition>}}<text block>{{for}}                                   This is a convenience tag for surrounding text with a go "for" statement.
 
-These tags are substitutes for switching into GO mode and using a `for` or `if` statement. 
+These tags are substitutes for switching into GO mode and using a `for` or `if` statements. 
+<text block> will be in text mode to begin with, so that whatever you put there
+will be output, but you can switch to go mode if needed.
 
 ####Example
 
@@ -419,11 +431,11 @@ These tags are substitutes for switching into GO mode and using a `for` or `if` 
 ```
 ### Join Tags
 
-    {{join <slice>, <string>}}<block>{{join}}    Joins the items of a slice with a string.
+    {{join <slice>, <string>}}<text block>{{join}}    Joins the items of a slice with a string.
 
-Join will execute the <block> for each item of <slice>. Within <block> the variable
+Join will execute the <text block> for each item of <slice>. Within <text block> the variable
 "_i" will be an integer representing the index of the slice item, and "_j" will be the
-item itself. <block> starts in text mode, but you can put GoT commands in it. <string> will be output
+item itself. <text block> starts in text mode, but you can put GoT commands in it. <string> will be output
 between the output of each item, creating an effect similar to joining a slice of strings.
 
 
@@ -563,5 +575,10 @@ GoT was influenced by:
 
 ###v0.10.0
 This was a major rewrite with the following changes:
-- defined fragments end with {{fragName}} tags, rather than {{end}} tags
+- defined fragments end with {{end fragName}} tags, rather than {{end}} tags
 - {{else if ...}} is now {{elseif ...}}
+- {{join }} tag will join items with a string
+- The backup tag {{- has been removed
+- Reorganized the lexer and parser to be easier to debug
+- Added many more unit tests
+- The output is sent to an io.Writer called _w. This allows more flexible use of the templates, and the ability to wrap them with middleware

@@ -1,9 +1,9 @@
-{{define package}}template{{end}}
-{{define name}}TestStatic{{end}}
+{{define package}}template{{end package}}
+{{define name}}TestStatic{{end name}}
 
 {{define body}}
 
-{{ Here {{go buf.WriteString("is") }} some code wrapping text escaping to go. }}
+{{ Here {{go io.WriteString(_w, "is") }} some code wrapping text escaping to go.}}
 
 {{
 Testing quotes: "'`
@@ -11,7 +11,7 @@ Testing quotes: "'`
 
 {{
 <p>
-{{! Escaped html < }}
+{{! Escaped html <}}
 </p>
 }}
 
@@ -23,21 +23,21 @@ Testing quotes: "'`
 }}
 
 {{
-This should be testStatic: {{templateRoot}}
+This should be testStatic: {{name}}
 }}
 
-{{end}}
+{{end body}}
 
 {{: "runner.inc" }}
 
 type Translater interface {
-	Translate(string, *bytes.Buffer)
+	Translate(string) string
 }
 
-func translateTest(t Translater, buf *bytes.Buffer) {
+func translateTest(t Translater, _w io.Writer) (err error) {
 
 {{t Translate me to some language }}
 
 {{!t Translate & escape me > }}
-
+    return
 }

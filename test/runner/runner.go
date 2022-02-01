@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"github.com/goradd/got/test/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"bytes"
-	"github.com/goradd/got/test/template"
 )
 
 func main() {

@@ -17,7 +17,7 @@ type namedBlockEntry struct {
 
 var modules map[string]string
 var includePaths []string
-var includeNamedBlocks map[string]namedBlockEntry
+var includeNamedBlocks  = make(map[string]namedBlockEntry)
 
 func Run(outDir string,
 	typ string,
@@ -101,11 +101,18 @@ func Run(outDir string,
 		return 1
 	}
 
+	// TODO: parallel multi-file processing with go routines
 	var files2 []string
 	for _, file := range files {
 		newPath := outfilePath(file, outDir)
-		// duplicate the named blocks from the include files in case the previous file added to them
-		a,_,err := buildAst(file)
+		// duplicate the named blocks from the include files before passing them to individual files
+		namedBlocks := make(map[string]namedBlockEntry)
+		for k,v := range includeNamedBlocks {
+			namedBlocks[k] = v
+		}
+
+		var a astType
+		a, err = buildAst(file, namedBlocks)
 		if err != nil {
 			_,_ = fmt.Fprintf(os.Stderr, err.Error())
 			return 1
@@ -115,13 +122,20 @@ func Run(outDir string,
 		asts2 = append(asts2, asts...)
 		asts2 = append(asts2, a)
 
-		outputAsts(newPath, asts2...)
+		err = outputAsts(newPath, asts2...)
+		if err != nil {
+			_,_ = fmt.Fprintf(os.Stderr, err.Error())
+			return 1
+		}
+
 		files2 = append(files2, newPath)
 	}
 
 	// Since go typically does io asynchronously, we run our second stage after some pause to let the writes finish
 	for _, file := range files2 {
-		postProcess(file, runImports)
+		if n := postProcess(file, runImports); n > 0 {
+			return n
+		}
 	}
 	return 0
 }
@@ -129,17 +143,9 @@ func Run(outDir string,
 func prepIncludeFiles(includes []string) (asts []astType, err error) {
 	for _, f := range includes {
 		var a astType
-		var l *lexer
-		a,l,err = buildAst(f)
+		a,err = buildAst(f, includeNamedBlocks)
 		if err == nil {
 			asts = append(asts, a)
-			for k,v := range l.namedBlocks {
-				if _,ok := includeNamedBlocks[k]; ok {
-					err = fmt.Errorf("named block %s has previously been defined", k)
-					return
-				}
-				includeNamedBlocks[k] = v
-			}
 		} else {
 			break
 		}
@@ -178,7 +184,7 @@ func outfilePath(file string, outDir string) string {
 }
 
 
-func postProcess(file string, runImports bool) {
+func postProcess(file string, runImports bool) int {
 	curDir, _ := os.Getwd()
 	dir := filepath.Dir(file)
 	_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
@@ -187,11 +193,11 @@ func postProcess(file string, runImports bool) {
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
 				_,_ = fmt.Fprintln(os.Stderr, "error running goimports on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
-				os.Exit(1)
+				return 1
 			} else if err2, ok2 := err.(*exec.ExitError); ok2 {
 				// Likely a syntax error in the resulting file
-				_,_ = fmt.Fprintln(os.Stderr, err2.Stderr)
-				os.Exit(1)
+				_,_ = fmt.Fprintln(os.Stderr, string(err2.Stderr))
+				return 1
 			}
 		}
 	} else {
@@ -199,12 +205,14 @@ func postProcess(file string, runImports bool) {
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
 				_,_ = fmt.Fprintln(os.Stderr, "error running go fmt on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
-				os.Exit(1)
+				return 1
 			} else if e2, ok2 := err.(*exec.ExitError); ok2 {
 				// Likely a syntax error in the resulting file
-				log.Print(string(e2.Stderr))
+				_,_ = fmt.Fprintln(os.Stderr, string(e2.Stderr))
+				return 1
 			}
 		}
 	}
 	_ = os.Chdir(curDir)
+	return 0
 }

@@ -1,5 +1,5 @@
-{{define package}}template{{end}}
-{{define name}}TestVars{{end}}
+{{define package}}template{{end package}}
+{{define name}}TestVars{{end name}}
 
 {{define body}}
 
@@ -22,7 +22,7 @@ for i := 0; i < 5; i++ {
 
 {{# Here is a comment }}
 
-{{end}}
+{{end body}}
 
 {{: "runner.inc"}}
 

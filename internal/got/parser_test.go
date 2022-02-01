@@ -6,7 +6,7 @@ import (
 )
 
 func parseContent(content string) tokenItem {
-	l := lexBlock("test", content)
+	l := lexBlock("test", content, nil)
 	i := parse(l)
 	return i
 }
@@ -83,11 +83,20 @@ func Test_parse(t *testing.T) {
 		assert.Equal(t, 2, len(item.childItems[0].params))
 		assert.Equal(t, "a.b", item.childItems[0].params["slice"].val)
 		assert.Equal(t, "c", item.childItems[0].params["joinString"].val)
-
+		assert.Equal(t, 1, len(item.childItems[0].childItems))
 		assert.Equal(t, itemRun, item.childItems[0].childItems[0].typ)
 		assert.Equal(t, "d", item.childItems[0].childItems[0].val)
 	})
 
-
+	t.Run("join2", func(t *testing.T) {
+		item := parseContent("{{join a.b, c}}{{i d}}{{join}}")
+		assert.Equal(t, itemJoin, item.childItems[0].typ)
+		assert.Equal(t, 2, len(item.childItems[0].params))
+		assert.Equal(t, "a.b", item.childItems[0].params["slice"].val)
+		assert.Equal(t, "c", item.childItems[0].params["joinString"].val)
+		assert.Equal(t, 1, len(item.childItems[0].childItems))
+		assert.Equal(t, itemInt, item.childItems[0].childItems[0].typ)
+		assert.Equal(t, "d", item.childItems[0].childItems[0].val)
+	})
 
 }

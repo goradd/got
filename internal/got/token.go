@@ -13,7 +13,6 @@ type tokenItem struct {
 	translate  bool
 	htmlBreaks bool   // adds html break tags in exchange for newlines
 	val        string // filled in by lexer after initialization
-	newline	   bool   // a run of text should start on a new line
 	fileName   string
 	blockName  string
 	lineNum	   int
@@ -25,7 +24,6 @@ type tokenItem struct {
 const (
 	tokEndBlock = "{{end}}"
 	tokEnd      = "}}"
-	tokEndWithSpace      = " }}"
 	tokBegin    = "{{"
 )
 
@@ -167,5 +165,5 @@ func init() {
 	tokens["{{join"] = tokenItem{typ: itemJoin} // Like a string.Join statement
 	tokens["{{join}}"] = tokenItem{typ: itemEndBlock, val:"join"}
 
-	tokens["}}"] = tokenItem{typ: itemEnd} // need to check this for white space BEFORE instead of after.
+	tokens["}}"] = tokenItem{typ: itemEnd}
 }

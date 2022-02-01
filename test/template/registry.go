@@ -1,8 +1,10 @@
 package template
 
-import "bytes"
+import (
+	"io"
+)
 
-type TestF func(buf *bytes.Buffer) error
+type TestF func(io.Writer) error
 
 type Test struct {
 	F    TestF
