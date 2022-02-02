@@ -114,15 +114,29 @@ func Run(outDir string,
 
 		// Default named block values
 		file,_ = filepath.Abs(file)
+		root := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
+		for  {
+			ext := filepath.Ext(root)
+			if ext == "" {break}
+			root = strings.TrimSuffix(root, ext)
+		}
+
 		namedBlocks["templatePath"] = namedBlockEntry{file, 0, locationRef{}}
 		namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0, locationRef{}}
-		namedBlocks["templateRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)), 0, locationRef{}}
+		namedBlocks["templateRoot"] = namedBlockEntry{root, 0, locationRef{}}
 		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
 
 		newPath,_ = filepath.Abs(newPath)
+		root = strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath))
+		for  {
+			ext := filepath.Ext(root)
+			if ext == "" {break}
+			root = strings.TrimSuffix(root, ext)
+		}
+
 		namedBlocks["outPath"] = namedBlockEntry{newPath, 0, locationRef{}}
 		namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0, locationRef{}}
-		namedBlocks["outRoot"] = namedBlockEntry{strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath)), 0, locationRef{}}
+		namedBlocks["outRoot"] = namedBlockEntry{root, 0, locationRef{}}
 		namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0, locationRef{}}
 
 		var a astType
