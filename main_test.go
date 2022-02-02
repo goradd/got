@@ -111,3 +111,4 @@ func resetTemplates() {
 		_ = os.Remove(f)
 	}
 }
+
