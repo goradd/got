@@ -18,6 +18,14 @@ func Test_parse(t *testing.T) {
 		assert.Equal(t, 1, len(item.childItems))
 		assert.Equal(t, itemRun, item.childItems[0].typ)
 	})
+
+	t.Run("go with error", func(t *testing.T) {
+		item := parseContent("{{e abc }}")
+		assert.Equal(t, itemGoErr, item.childItems[0].typ)
+		assert.Equal(t, "abc", item.childItems[0].val)
+		assert.Equal(t, true, item.childItems[0].withError)
+	})
+
 	t.Run("text run", func(t *testing.T) {
 		item := parseContent("{{ abc }}")
 		assert.Equal(t, itemText, item.childItems[0].typ)

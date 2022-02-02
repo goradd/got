@@ -2,3 +2,7 @@ Evaluates to a string
 Here is the number: -5
 And another: Me with no escaping
 And a float: 6.400000095367432
+Bytes: some bytes
+Boolean: true
+
+Just error:  2

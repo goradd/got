@@ -44,6 +44,7 @@ const (
 
 	itemEnd
 	itemGo
+	itemGoErr
 	itemText
 
 	itemRun // A run of text
@@ -137,8 +138,8 @@ func init() {
 	// go code straight pass through
 	tokens["{{g"] = tokenItem{typ: itemGo}
 	tokens["{{go"] = tokenItem{typ: itemGo}
-	tokens["{{e"] = tokenItem{typ: itemGo, withError: true}
-	tokens["{{err"] = tokenItem{typ: itemGo, withError: true}
+	tokens["{{e"] = tokenItem{typ: itemGoErr, withError: true}
+	tokens["{{err"] = tokenItem{typ: itemGoErr, withError: true}
 
 	tokens["{{begin"] = tokenItem{typ: itemStrictBlock}
 	tokens["{{define"] = tokenItem{typ: itemNamedBlock} // must follow with a name and a close tag
