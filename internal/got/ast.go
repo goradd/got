@@ -108,6 +108,9 @@ func (a *astWalker) walk(item tokenItem) error {
 	case itemBytes:
 		return a.outputValue(item)
 
+	case itemGoErr:
+		return a.outputGoErr(item)
+
 	case itemIf:
 		return a.outputIf(item)
 
@@ -237,6 +240,11 @@ func (a *astWalker) outputValue(item tokenItem) (err error) {
 	}
 	_, err = io.WriteString(a.w, out)
 	a.previousOutputEndedInNewline = false
+	return
+}
+
+func (a *astWalker) outputGoErr(item tokenItem) (err error) {
+	_,err = fmt.Fprintf(a.w, "\nif err = %s; err != nil {return}\n", item.val)
 	return
 }
 

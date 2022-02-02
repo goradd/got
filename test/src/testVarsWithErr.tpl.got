@@ -9,6 +9,11 @@
 Here is the number: {{ie givesIntWithErr() }}
 And another: {{se givesStringWithErr() }}
 And a float: {{fe  givesFloatWithErr() }}
+Bytes: {{we givesBytesWithErr() }}
+Boolean: {{be givesBoolWithErr() }}
+
+{{g a := 1}}
+Just error: {{e justGivesErr(&a) }} {{i a}}
 }}
 
 {{# Here is a comment }}
@@ -28,6 +33,21 @@ func givesIntWithErr() (int,error) {
 func givesFloatWithErr() (float32, error) {
 	return 6.4, nil
 }
+
+func givesBytesWithErr() ([]byte, error) {
+	return []byte("some bytes"), nil
+}
+
+func givesBoolWithErr() (bool, error) {
+	return true, nil
+}
+
+func justGivesErr(a *int) (err error) {
+    *a = 2
+	return nil
+}
+
+
 
 
 

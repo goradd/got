@@ -71,7 +71,8 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 		case itemUInt: fallthrough
 		case itemFloat: fallthrough
 		case itemInterface: fallthrough
-		case itemBytes:
+		case itemBytes: fallthrough
+		case itemGoErr:
 			item2 := p.parseValue(item)
 			if item2.typ == itemError {
 				endItem = item2
