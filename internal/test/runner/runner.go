@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"github.com/goradd/got/test/registry"
-	_ "github.com/goradd/got/test/template"
+	"github.com/goradd/got/internal/test/registry"
+	_ "github.com/goradd/got/internal/test/template"
 	"io/ioutil"
 	"os"
 	"path/filepath"
