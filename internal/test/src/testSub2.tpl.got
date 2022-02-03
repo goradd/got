@@ -3,7 +3,7 @@ package template
 import (
 	"io"
 	"fmt"
-	"github.com/goradd/got/test/registry"
+	"github.com/goradd/got/internal/test/registry"
 )
 
 {{# Here we are redefining a previously defined block to make sure the defines are isolated.}}

@@ -3,7 +3,7 @@ package {{package}}
 import (
 	"io"
 	"fmt"
-	"github.com/goradd/got/test/registry"
+	"github.com/goradd/got/internal/test/registry"
 	{{>? imports}}
 )
 
