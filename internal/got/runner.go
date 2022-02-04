@@ -213,11 +213,12 @@ func outfilePath(file string, outDir string) string {
 
 
 func postProcess(file string, runImports bool) int {
-	curDir, _ := os.Getwd()
-	dir := filepath.Dir(file)
-	_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
 	if runImports {
+		curDir, _ := os.Getwd()
+		dir := filepath.Dir(file)
+		_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
 		_, err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
+		_ = os.Chdir(curDir)
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
 				_,_ = fmt.Fprintln(os.Stderr, "error running goimports on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
@@ -229,6 +230,5 @@ func postProcess(file string, runImports bool) int {
 			}
 		}
 	}
-	_ = os.Chdir(curDir)
 	return 0
 }
