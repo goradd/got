@@ -9,7 +9,7 @@ type parser struct {
 }
 
 func parse(l *lexer) tokenItem {
-	p := parser{lexer:l}
+	p := parser{lexer: l}
 	topItem := tokenItem{typ: itemGo}
 	var endItem tokenItem
 	topItem.childItems, endItem = p.parseRun()
@@ -52,7 +52,8 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 			endItem = item
 			return
 
-		case itemText:fallthrough
+		case itemText:
+			fallthrough
 		case itemGo:
 			item.childItems, endItem = p.parseRun()
 			if endItem.typ == itemEOF {
@@ -65,13 +66,20 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 			}
 			subItems = append(subItems, item)
 
-		case itemString: fallthrough
-		case itemBool: fallthrough
-		case itemInt: fallthrough
-		case itemUInt: fallthrough
-		case itemFloat: fallthrough
-		case itemInterface: fallthrough
-		case itemBytes: fallthrough
+		case itemString:
+			fallthrough
+		case itemBool:
+			fallthrough
+		case itemInt:
+			fallthrough
+		case itemUInt:
+			fallthrough
+		case itemFloat:
+			fallthrough
+		case itemInterface:
+			fallthrough
+		case itemBytes:
+			fallthrough
 		case itemGoErr:
 			item2 := p.parseValue(item)
 			if item2.typ == itemError {
@@ -117,7 +125,7 @@ func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 }
 
 func (p *parser) parseValue(item tokenItem) tokenItem {
-	runItem := <- p.lexer.items
+	runItem := <-p.lexer.items
 	switch runItem.typ {
 	case itemRun:
 		item.val = strings.TrimSpace(runItem.val)
@@ -142,10 +150,10 @@ func (p *parser) parseValue(item tokenItem) tokenItem {
 		return runItem
 	}
 
-	endItem := <- p.lexer.items
+	endItem := <-p.lexer.items
 	switch endItem.typ {
 	case itemEnd:
-	return item // correctly terminated a value
+		return item // correctly terminated a value
 	case itemEOF:
 		endItem.typ = itemError
 		endItem.val = "unexpected end of file"
@@ -357,11 +365,10 @@ func (p *parser) parseJoin(item tokenItem) tokenItem {
 		return endItem
 	}
 	item.childItems, endItem = p.parseRun()
-	if endItem.typ != itemEndBlock  || endItem.val != "join"{
+	if endItem.typ != itemEndBlock || endItem.val != "join" {
 		endItem.typ = itemError
 		endItem.val = "expected ending join tag"
 		return endItem
 	}
 	return item
 }
-

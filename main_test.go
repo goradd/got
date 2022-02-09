@@ -3,14 +3,15 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/goradd/gofile/pkg/sys"
-	"github.com/goradd/got/internal/got"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/goradd/gofile/pkg/sys"
+	"github.com/goradd/got/internal/got"
+	"github.com/stretchr/testify/assert"
 )
 
 // This file runs the tests found in the test directory. It is set up so that code coverage can be checked as well.
@@ -111,4 +112,3 @@ func resetTemplates() {
 		_ = os.Remove(f)
 	}
 }
-

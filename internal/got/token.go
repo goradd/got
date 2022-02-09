@@ -8,23 +8,23 @@ import "fmt"
 type tokenType int
 
 type locationRef struct {
-	fileName   string
-	blockName  string
-	lineNum	   int
-	offset	   int
+	fileName  string
+	blockName string
+	lineNum   int
+	offset    int
 }
 
 type tokenItem struct {
-	typ     tokenType
-	escaped bool
-	optional bool
+	typ        tokenType
+	escaped    bool
+	optional   bool
 	withError  bool
 	translate  bool
 	htmlBreaks bool   // adds html break tags in exchange for newlines
 	val        string // filled in by lexer after initialization
-	callStack []locationRef
-	childItems []tokenItem // Filled in during the parsing step to build the ast
-	params map[string]tokenItem // Filled in during the parsing step to build the ast
+	callStack  []locationRef
+	childItems []tokenItem          // Filled in during the parsing step to build the ast
+	params     map[string]tokenItem // Filled in during the parsing step to build the ast
 }
 
 const (
@@ -34,7 +34,7 @@ const (
 )
 
 const (
-	itemEOF tokenType = iota	// 0 so that its the default after the channel is closed
+	itemEOF tokenType = iota // 0 so that its the default after the channel is closed
 	itemError
 	itemStrictBlock
 	itemNamedBlock
@@ -60,8 +60,8 @@ const (
 	itemComment
 
 	itemIf
-	itemElse  	// only used by parser
-	itemElseIf	// only used by parser
+	itemElse   // only used by parser
+	itemElseIf // only used by parser
 	itemFor
 
 	itemJoin
@@ -145,8 +145,8 @@ func init() {
 	tokens["{{define"] = tokenItem{typ: itemNamedBlock} // must follow with a name and a close tag
 	tokens["{{<"] = tokenItem{typ: itemNamedBlock}      // must follow with a name and a close tag
 
-	tokens["{{>"] = tokenItem{typ: itemSubstitute}   // must follow with a name and a close tag
-	tokens["{{put"] = tokenItem{typ: itemSubstitute} // must follow with a name and a close tag
+	tokens["{{>"] = tokenItem{typ: itemSubstitute}                    // must follow with a name and a close tag
+	tokens["{{put"] = tokenItem{typ: itemSubstitute}                  // must follow with a name and a close tag
 	tokens["{{>?"] = tokenItem{typ: itemSubstitute, optional: true}   // must follow with a name and a close tag
 	tokens["{{put?"] = tokenItem{typ: itemSubstitute, optional: true} // must follow with a name and a close tag
 
@@ -155,13 +155,12 @@ func init() {
 	tokens["{{t"] = tokenItem{typ: itemText, escaped: false, translate: true}
 	tokens["{{translate"] = tokenItem{typ: itemText, escaped: false, translate: true}
 
-	tokens["{{:"] = tokenItem{typ: itemInclude}                                                                // must follow with a file name
-	tokens["{{include"] = tokenItem{typ: itemInclude}                                                          // must follow with a file name
-	tokens["{{:h"] = tokenItem{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true}              // must follow with a file name
-	tokens["{{includeAsHtml"] = tokenItem{typ: itemInclude, escaped:true, withError: false, htmlBreaks:true}   // must follow with a file name
-	tokens["{{:!"] = tokenItem{typ: itemInclude, escaped:true, withError: false, htmlBreaks:false}             // must follow with a file name
-	tokens["{{includeEscaped"] = tokenItem{typ: itemInclude, escaped:true, withError: false, htmlBreaks:false} // must follow with a file name
-
+	tokens["{{:"] = tokenItem{typ: itemInclude}                                                                  // must follow with a file name
+	tokens["{{include"] = tokenItem{typ: itemInclude}                                                            // must follow with a file name
+	tokens["{{:h"] = tokenItem{typ: itemInclude, escaped: true, withError: false, htmlBreaks: true}              // must follow with a file name
+	tokens["{{includeAsHtml"] = tokenItem{typ: itemInclude, escaped: true, withError: false, htmlBreaks: true}   // must follow with a file name
+	tokens["{{:!"] = tokenItem{typ: itemInclude, escaped: true, withError: false, htmlBreaks: false}             // must follow with a file name
+	tokens["{{includeEscaped"] = tokenItem{typ: itemInclude, escaped: true, withError: false, htmlBreaks: false} // must follow with a file name
 
 	tokens["{{if"] = tokenItem{typ: itemIf} // Outputs a go "if" statement
 	tokens["{{if}}"] = tokenItem{typ: itemEndBlock, val: "if"}
@@ -169,10 +168,10 @@ func init() {
 	tokens["{{else}}"] = tokenItem{typ: itemEndBlock, val: "else"}
 
 	tokens["{{for"] = tokenItem{typ: itemFor} // Outputs a go "for" statement
-	tokens["{{for}}"] = tokenItem{typ: itemEndBlock, val:"for"}
+	tokens["{{for}}"] = tokenItem{typ: itemEndBlock, val: "for"}
 
 	tokens["{{join"] = tokenItem{typ: itemJoin} // Like a string.Join statement
-	tokens["{{join}}"] = tokenItem{typ: itemEndBlock, val:"join"}
+	tokens["{{join}}"] = tokenItem{typ: itemEndBlock, val: "join"}
 
 	tokens["}}"] = tokenItem{typ: itemEnd}
 }
@@ -180,7 +179,7 @@ func init() {
 func (t tokenItem) FormatError() (s string) {
 	if t.typ == itemError {
 		s = "*** Error: " + t.val + "\n"
-		for _,c := range t.callStack {
+		for _, c := range t.callStack {
 			s += "    from " + c.formatErrorLine() + "\n"
 		}
 	}
@@ -188,7 +187,7 @@ func (t tokenItem) FormatError() (s string) {
 }
 
 func (r locationRef) formatErrorLine() (s string) {
-	s += fmt.Sprintf("line: %d, offset: %d ", r.lineNum + 1, r.offset)
+	s += fmt.Sprintf("line: %d, offset: %d ", r.lineNum+1, r.offset)
 	if r.blockName != "" {
 		s += "of block: " + r.blockName
 	} else {

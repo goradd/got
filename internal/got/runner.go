@@ -2,23 +2,24 @@ package got
 
 import (
 	"fmt"
-	"github.com/goradd/gofile/pkg/sys"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/goradd/gofile/pkg/sys"
 )
 
 type namedBlockEntry struct {
-	text string
+	text       string
 	paramCount int
-	ref locationRef
+	ref        locationRef
 }
 
 var modules map[string]string
 var includePaths []string
-var includeNamedBlocks  = make(map[string]namedBlockEntry)
+var includeNamedBlocks = make(map[string]namedBlockEntry)
 
 func Run(outDir string,
 	typ string,
@@ -49,7 +50,7 @@ func Run(outDir string,
 			}
 			p := getRealPath(cur)
 			if fi, err := os.Stat(p); err != nil {
-				_,_ = fmt.Fprintf(os.Stderr, "Include path %s: %s", p, err.Error())
+				_, _ = fmt.Fprintf(os.Stderr, "Include path %s: %s", p, err.Error())
 				return 1
 			} else if fi.IsDir() {
 				includePaths = append(includePaths, p)
@@ -75,7 +76,7 @@ func Run(outDir string,
 	if outDir == "" {
 		var err error
 		if outDir, err = os.Getwd(); err != nil {
-			_,_ = fmt.Fprintf(os.Stderr, "Could not use the current directory as the output directory: %s",  err.Error())
+			_, _ = fmt.Fprintf(os.Stderr, "Could not use the current directory as the output directory: %s", err.Error())
 			return 1
 		}
 	}
@@ -83,12 +84,12 @@ func Run(outDir string,
 
 	dstInfo, err := os.Stat(outDir)
 	if err != nil {
-		_,_ = fmt.Fprintf(os.Stderr, "The output directory %s does not exist. Create the output directory and run it again.", outDir)
+		_, _ = fmt.Fprintf(os.Stderr, "The output directory %s does not exist. Create the output directory and run it again.", outDir)
 		return 1
 	}
 
 	if !dstInfo.Mode().IsDir() {
-		_,_ = fmt.Fprintf(os.Stderr, "The output directory specified is not a directory")
+		_, _ = fmt.Fprintf(os.Stderr, "The output directory specified is not a directory")
 		return 1
 	}
 
@@ -96,9 +97,9 @@ func Run(outDir string,
 		files, _ = filepath.Glob(inputDirectory + "*." + typ)
 	}
 
-	asts,err := prepIncludeFiles(includeFiles)
+	asts, err := prepIncludeFiles(includeFiles)
 	if err != nil {
-		_,_ = fmt.Fprintf(os.Stderr, err.Error())
+		_, _ = fmt.Fprintf(os.Stderr, err.Error())
 		return 1
 	}
 
@@ -108,16 +109,18 @@ func Run(outDir string,
 		newPath := outfilePath(file, outDir)
 		// duplicate the named blocks from the include files before passing them to individual files
 		namedBlocks := make(map[string]namedBlockEntry)
-		for k,v := range includeNamedBlocks {
+		for k, v := range includeNamedBlocks {
 			namedBlocks[k] = v
 		}
 
 		// Default named block values
-		file,_ = filepath.Abs(file)
+		file, _ = filepath.Abs(file)
 		root := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
-		for  {
+		for {
 			ext := filepath.Ext(root)
-			if ext == "" {break}
+			if ext == "" {
+				break
+			}
 			root = strings.TrimSuffix(root, ext)
 		}
 
@@ -126,11 +129,13 @@ func Run(outDir string,
 		namedBlocks["templateRoot"] = namedBlockEntry{root, 0, locationRef{}}
 		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
 
-		newPath,_ = filepath.Abs(newPath)
+		newPath, _ = filepath.Abs(newPath)
 		root = strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath))
-		for  {
+		for {
 			ext := filepath.Ext(root)
-			if ext == "" {break}
+			if ext == "" {
+				break
+			}
 			root = strings.TrimSuffix(root, ext)
 		}
 
@@ -142,7 +147,7 @@ func Run(outDir string,
 		var a astType
 		a, err = buildAst(file, namedBlocks)
 		if err != nil {
-			_,_ = fmt.Fprintf(os.Stderr, err.Error())
+			_, _ = fmt.Fprintf(os.Stderr, err.Error())
 			return 1
 		}
 
@@ -152,7 +157,7 @@ func Run(outDir string,
 
 		err = outputAsts(newPath, asts2...)
 		if err != nil {
-			_,_ = fmt.Fprintf(os.Stderr, err.Error())
+			_, _ = fmt.Fprintf(os.Stderr, err.Error())
 			return 1
 		}
 
@@ -171,7 +176,7 @@ func Run(outDir string,
 func prepIncludeFiles(includes []string) (asts []astType, err error) {
 	for _, f := range includes {
 		var a astType
-		a,err = buildAst(f, includeNamedBlocks)
+		a, err = buildAst(f, includeNamedBlocks)
 		if err == nil {
 			asts = append(asts, a)
 		} else {
@@ -188,7 +193,6 @@ func getRealPath(path string) string {
 	}
 	return newPath
 }
-
 
 func outfilePath(file string, outDir string) string {
 	dir := filepath.Dir(file)
@@ -211,7 +215,6 @@ func outfilePath(file string, outDir string) string {
 	return file
 }
 
-
 func postProcess(file string, runImports bool) int {
 	curDir, _ := os.Getwd()
 	dir := filepath.Dir(file)
@@ -220,11 +223,11 @@ func postProcess(file string, runImports bool) int {
 		_, err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
-				_,_ = fmt.Fprintln(os.Stderr, "error running goimports on file " + file + ": " + e.Error()) // perhaps goimports is not installed?
+				_, _ = fmt.Fprintln(os.Stderr, "error running goimports on file "+file+": "+e.Error()) // perhaps goimports is not installed?
 				return 1
 			} else if err2, ok2 := err.(*exec.ExitError); ok2 {
 				// Likely a syntax error in the resulting file
-				_,_ = fmt.Fprintln(os.Stderr, string(err2.Stderr))
+				_, _ = fmt.Fprintln(os.Stderr, string(err2.Stderr))
 				return 1
 			}
 		}
