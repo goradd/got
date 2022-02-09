@@ -569,9 +569,10 @@ func isTagChar(r rune) bool {
 		r == errRune ||
 		r == '{' {
 		return false
-	} else {
-		return true
 	}
+
+	// else
+	return true
 }
 
 func (l *lexer) isAtOpenTag() bool {
