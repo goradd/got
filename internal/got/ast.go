@@ -39,7 +39,7 @@ func buildAst(fileName string, namedBlocks map[string]namedBlockEntry) (ret astT
 	l := lexFile(fileName, inFile, namedBlocks)
 	ret.topItem = parse(l)
 	if ret.topItem.typ == itemError {
-		err = fmt.Errorf(ret.topItem.FormatError())
+		err = fmt.Errorf(ret.topItem.formatError())
 	}
 	return
 }
@@ -184,9 +184,9 @@ func (a *astWalker) outputText(val string) (err error) {
 func (a *astWalker) outputRun(item tokenItem) error {
 	if !a.textMode {
 		return a.outputGo(item.val)
-	} else {
-		return a.outputText(item.val)
 	}
+
+	return a.outputText(item.val)
 }
 
 func (a *astWalker) outputGo(code string) (err error) {
@@ -244,7 +244,7 @@ func (a *astWalker) outputValue(item tokenItem) (err error) {
 }
 
 func (a *astWalker) outputGoErr(item tokenItem) (err error) {
-	_,err = fmt.Fprintf(a.w, "\nif err = %s; err != nil {return}\n", item.val)
+	_, err = fmt.Fprintf(a.w, "\nif err = %s; err != nil {return}\n", item.val)
 	return
 }
 

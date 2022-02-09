@@ -1,8 +1,9 @@
 package got
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func parseContent(content string) tokenItem {
@@ -116,7 +117,6 @@ func Test_parse(t *testing.T) {
 		assert.Equal(t, " ", item.childItems[0].childItems[2].val)
 	})
 
-
 }
 
 func Test_parseErr(t *testing.T) {
@@ -155,6 +155,12 @@ func Test_parseErr(t *testing.T) {
 		item := parseContent("{{ {{= a{{ b }} }} }}")
 		assert.Equal(t, itemError, item.typ)
 	})
+
+	t.Run("unexpect block end", func(t *testing.T) {
+		item := parseContent("{{ {{for}} }}")
+		assert.Equal(t, itemError, item.typ)
+	})
+
 }
 
 func Test_parseIfErr(t *testing.T) {
@@ -234,7 +240,6 @@ func Test_parseIfErr(t *testing.T) {
 		assert.Equal(t, itemError, item.typ)
 	})
 
-
 }
 
 func Test_parseForErr(t *testing.T) {
@@ -255,7 +260,6 @@ func Test_parseForErr(t *testing.T) {
 		assert.Equal(t, itemError, item.typ)
 	})
 
-
 	t.Run("bad condition 5", func(t *testing.T) {
 		item := parseContent("{{for  a{{join}}}}")
 		assert.Equal(t, itemError, item.typ)
@@ -268,7 +272,6 @@ func Test_parseForErr(t *testing.T) {
 		item := parseContent("{{for a")
 		assert.Equal(t, itemError, item.typ)
 	})
-
 
 	t.Run("bad block", func(t *testing.T) {
 		item := parseContent("{{for  a}}b")
@@ -287,7 +290,6 @@ func Test_parseForErr(t *testing.T) {
 		item := parseContent("{{for  a}}b{{if}}")
 		assert.Equal(t, itemError, item.typ)
 	})
-
 
 }
 

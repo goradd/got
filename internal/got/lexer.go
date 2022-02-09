@@ -18,17 +18,17 @@ const eof rune = -1
 const errRune rune = -2
 
 type lexer struct {
-	fileName  string         // file name being scanned
-	blockName string         // named block being scanned
-	input     *bufio.Reader  // stream being scanned
-	items     chan tokenItem // channel of scanned items
-	curBuffer []rune		 // current character run
-	lineNum   int			 // line number at start of curBuffer
-	lineRuneNum int			 // the char num on the line at start of curBuffer
-	backBuffer []rune		 // items that were put back into the lexer after a peek
-	relativePaths []string   // when including files, keeps track of the relative paths to search
-	namedBlocks map[string]namedBlockEntry
-	err error	// most recent error
+	fileName      string         // file name being scanned
+	blockName     string         // named block being scanned
+	input         *bufio.Reader  // stream being scanned
+	items         chan tokenItem // channel of scanned items
+	curBuffer     []rune         // current character run
+	lineNum       int            // line number at start of curBuffer
+	lineRuneNum   int            // the char num on the line at start of curBuffer
+	backBuffer    []rune         // items that were put back into the lexer after a peek
+	relativePaths []string       // when including files, keeps track of the relative paths to search
+	namedBlocks   map[string]namedBlockEntry
+	err           error // most recent error
 }
 
 type stateFn func(*lexer) stateFn
@@ -41,11 +41,11 @@ func lexFile(fileName string,
 	relPaths ...string) *lexer {
 
 	l := &lexer{
-		input:    bufio.NewReader(reader),
-		fileName: fileName,
-		items:    make(chan tokenItem),
+		input:         bufio.NewReader(reader),
+		fileName:      fileName,
+		items:         make(chan tokenItem),
 		relativePaths: relPaths,
-		namedBlocks: namedBlocks, // use named blocks passed in. This will add to the parent map.
+		namedBlocks:   namedBlocks, // use named blocks passed in. This will add to the parent map.
 	}
 
 	go l.run()
@@ -55,16 +55,15 @@ func lexFile(fileName string,
 // lex treats the given string as a block to be inserted
 func lexBlock(blockName string, content string, namedBlocks map[string]namedBlockEntry) *lexer {
 	l := &lexer{
-		input:    bufio.NewReader(strings.NewReader(content)),
-		blockName: blockName,
-		items:    make(chan tokenItem),
+		input:       bufio.NewReader(strings.NewReader(content)),
+		blockName:   blockName,
+		items:       make(chan tokenItem),
 		namedBlocks: namedBlocks,
 	}
 
 	go l.run()
 	return l
 }
-
 
 func (l *lexer) run() {
 	for state := lexStart; state != nil; {
@@ -73,13 +72,12 @@ func (l *lexer) run() {
 	close(l.items)
 }
 
-
 // Starting state. We start in GO mode.
 func lexStart(l *lexer) stateFn {
 	return lexRun(l)
 }
 
-func lexRun(l *lexer)  stateFn {
+func lexRun(l *lexer) stateFn {
 	l.acceptRun()
 	l.emitRun()
 	if l.isAtCloseTag() {
@@ -94,7 +92,7 @@ func lexRun(l *lexer)  stateFn {
 	}
 }
 
-func lexParams(l *lexer)  stateFn {
+func lexParams(l *lexer) stateFn {
 	l.ignoreSpace()
 
 	l.acceptRun()
@@ -104,20 +102,19 @@ func lexParams(l *lexer)  stateFn {
 	}
 
 	paramString := l.currentString()
-	params,err := splitParams(paramString)
+	params, err := splitParams(paramString)
 	if err != nil {
 		l.emitError(err.Error())
 		return nil
 	}
-	for _,p := range params {
-		l.emit(tokenItem{typ:itemParam, val: p})
+	for _, p := range params {
+		l.emit(tokenItem{typ: itemParam, val: p})
 	}
 	return lexRun
 }
 
-
 // We are pointing to the start of an unknown tag
-func lexTag(l *lexer)  stateFn {
+func lexTag(l *lexer) stateFn {
 	a := l.acceptTag()
 
 	if a == "" {
@@ -133,7 +130,7 @@ func lexTag(l *lexer)  stateFn {
 		// - A compressed "interface" tag of the form: {{SomeGoCodeWithValue}}, which will be somewhat similar to the built-in go template engine
 
 		tagName := a[2:]
-		if len(tagName)>2 && tagName[len(tagName)-2:] == "}}" {
+		if len(tagName) > 2 && tagName[len(tagName)-2:] == "}}" {
 			tagName = tagName[:len(tagName)-2]
 		}
 		// if a recognized custom tag, we need to lex it
@@ -193,10 +190,10 @@ func (l *lexer) emit(i tokenItem) {
 	}
 
 	ref := locationRef{
-		fileName: l.fileName,
+		fileName:  l.fileName,
 		blockName: l.blockName,
-		lineNum: l.lineNum,
-		offset: l.lineRuneNum,
+		lineNum:   l.lineNum,
+		offset:    l.lineRuneNum,
 	}
 	i.callStack = append(i.callStack, ref)
 
@@ -257,7 +254,7 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 
 	// Assemble the relative paths collected so far
 	var relPath string
-	for _,thisPath := range l.relativePaths {
+	for _, thisPath := range l.relativePaths {
 		relPath = filepath.Join(relPath, thisPath)
 	}
 
@@ -307,14 +304,14 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 	}
 
 	// lex the include file
-	relPaths := make([]string, len(l.relativePaths), len(l.relativePaths) + 1)
+	relPaths := make([]string, len(l.relativePaths), len(l.relativePaths)+1)
 	copy(relPaths, l.relativePaths)
 	curRelPath := path.Dir(fileName)
 	if curRelPath != "" {
 		relPaths = append(relPaths, curRelPath)
 	}
 
-	inFile,err := os.Open(foundPath)
+	inFile, err := os.Open(foundPath)
 	if err != nil {
 		l.emitError("Include file error: %s", err.Error())
 		return nil // stop
@@ -323,24 +320,22 @@ func (l *lexer) lexInclude(htmlBreaks bool, escaped bool) stateFn {
 		_ = inFile.Close()
 	}()
 
-
 	l2 := lexFile(foundPath, inFile, l.namedBlocks, relPaths...)
 
 	for item := range l2.items {
 		l.emit(item) // send items as if they are part of current file
 		if item.typ == itemError {
 			l.emitError("") // add where the file was included from
-			return nil // stop processing
+			return nil      // stop processing
 		}
 	}
 
 	return lexRun
 }
 
-
 func fileExists(name string) bool {
 	_, err := os.Stat(name)
-	return 	!errors.Is(err, fs.ErrNotExist)
+	return !errors.Is(err, fs.ErrNotExist)
 }
 
 func (l *lexer) lexDefineNamedBlock() stateFn {
@@ -355,12 +350,12 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 	name := strings.TrimSpace(l.currentString())
 	l.ignoreCloseTag()
 
-	items := strings.Split(name," ")
+	items := strings.Split(name, " ")
 	var paramCount int
 	if len(items) == 2 {
 		var err error
 		name = items[0]
-		paramCount,err = strconv.Atoi(items[1])
+		paramCount, err = strconv.Atoi(items[1])
 		if err != nil {
 			l.emitError("item after block name must be the parameter count")
 			return nil
@@ -375,7 +370,7 @@ func (l *lexer) lexDefineNamedBlock() stateFn {
 		return nil
 	}
 
-	if _, ok := tokens["{{" + name]; ok {
+	if _, ok := tokens["{{"+name]; ok {
 		l.emitError("block name cannot be a tag name. Block name: %s", name)
 		return nil
 	}
@@ -420,13 +415,12 @@ func (l *lexer) lexSubstitute(optional bool) stateFn {
 	var ok bool
 	var processedBlock string
 
-	if block, ok = l.getNamedBlock(name); !ok  {
+	if block, ok = l.getNamedBlock(name); !ok {
 		if !optional {
 			l.emitError("named block not found: %s", name)
 			return nil
-		} else {
-			return lexRun // keep going
 		}
+		return lexRun // else keep going
 	}
 
 	params, err := splitParams(paramString)
@@ -446,7 +440,7 @@ func (l *lexer) lexSubstitute(optional bool) stateFn {
 		l.emit(item) // send items as if they are part of current file
 		if item.typ == itemError {
 			l.emitError("") // add where the item was included from
-			return nil // stop processing
+			return nil      // stop processing
 		}
 	}
 
@@ -465,7 +459,7 @@ func processParams(name string, in namedBlockEntry, params []string) (out string
 		out = in.text
 		return
 	}
-	if len(params) >  in.paramCount {
+	if len(params) > in.paramCount {
 		err = fmt.Errorf("too many parameters given for block %s: max %d, got %d", name, in.paramCount, len(params))
 		return
 	}
@@ -476,8 +470,8 @@ func processParams(name string, in namedBlockEntry, params []string) (out string
 	}
 
 	// fill in with blanks the remaining parameters
-	if i < in.paramCount - 1 {
-		for j := i + 1; j < in.paramCount;j++ {
+	if i < in.paramCount-1 {
+		for j := i + 1; j < in.paramCount; j++ {
 			search := fmt.Sprintf("$%d", j+1)
 			out = strings.Replace(out, search, "", -1)
 		}
@@ -502,7 +496,7 @@ func splitParams(paramString string) (params []string, err error) {
 			currentItem = strings.TrimSpace(currentItem)
 			if currentItem != "" {
 				if currentItem[0] == '"' {
-					currentItem,err = strconv.Unquote(currentItem)
+					currentItem, err = strconv.Unquote(currentItem)
 					if err != nil {
 						return
 					}
@@ -519,7 +513,7 @@ func splitParams(paramString string) (params []string, err error) {
 	}
 	if currentItem != "" {
 		if currentItem[0] == '"' {
-			currentItem,err = strconv.Unquote(currentItem)
+			currentItem, err = strconv.Unquote(currentItem)
 			if err != nil {
 				return
 			}
@@ -532,7 +526,6 @@ func splitParams(paramString string) (params []string, err error) {
 	return
 }
 
-
 func (l *lexer) lexComment() stateFn {
 	l.ignoreRun()
 
@@ -543,7 +536,6 @@ func (l *lexer) lexComment() stateFn {
 	l.ignoreCloseTag()
 	return lexRun
 }
-
 
 func (l *lexer) lexJoin() stateFn {
 	l.emitType(itemJoin)
@@ -599,7 +591,7 @@ func (l *lexer) isAt(pattern string) bool {
 // peek returns but does not consume the next rune in the input.
 func (l *lexer) peek() rune {
 	r := l.next()
-	if r != eof  && r != errRune {
+	if r != eof && r != errRune {
 		l.backup()
 	}
 	return r
@@ -621,7 +613,6 @@ func (l *lexer) peekN(n int) (ret string) {
 	}
 	return
 }
-
 
 // acceptRun consumes a run of runes until it finds an open or close tag, or reaches eof
 func (l *lexer) acceptRun() {
@@ -674,41 +665,42 @@ func (l *lexer) acceptTag() (ret string) {
 				l.next()
 				ret += "}}"
 				return
-			} else {
-				// likely an error, but reject the closing bracket as part of the tag
-				l.backup()
-				return
 			}
+
+			// else likely an error, but reject the closing bracket as part of the tag
+			l.backup()
+			return
 		} else if isTagChar(r) {
 			foundOne = true
 			ret += string(r)
-		} else {
-			if r != eof && r != errRune {
-				l.backup()
-			}
-			return ret
+			continue
 		}
+
+		// else
+		if r != eof && r != errRune {
+			l.backup()
+		}
+		return ret
 	}
 }
-
 
 // next grabs, saves and returns the next rune. All reading of runes from the stream must go through here.
 func (l *lexer) next() rune {
 	var c rune
 
 	if len(l.backBuffer) > 0 {
-		c = l.backBuffer[len(l.backBuffer) - 1]
-		l.backBuffer = l.backBuffer[:len(l.backBuffer) - 1]
+		c = l.backBuffer[len(l.backBuffer)-1]
+		l.backBuffer = l.backBuffer[:len(l.backBuffer)-1]
 	} else {
 		var err error
 		c, _, err = l.input.ReadRune()
 		if err != nil {
 			if err == io.EOF {
 				return eof
-			} else {
-				l.err = err
-				return errRune
 			}
+			//else
+			l.err = err
+			return errRune
 		}
 	}
 	l.curBuffer = append(l.curBuffer, c)
@@ -720,9 +712,9 @@ func (l *lexer) backup() {
 	if len(l.curBuffer) == 0 {
 		panic("cannot backup here") // this is an error with GoT itself. This should not happen.
 	}
-	c := l.curBuffer[len(l.curBuffer) - 1]
+	c := l.curBuffer[len(l.curBuffer)-1]
 	l.backBuffer = append(l.backBuffer, c)
-	l.curBuffer = l.curBuffer[:len(l.curBuffer) - 1]
+	l.curBuffer = l.curBuffer[:len(l.curBuffer)-1]
 }
 
 // putBackCurBuffer puts back the entire curBuffer
@@ -743,10 +735,10 @@ func (l *lexer) calcCurLineNum() (lineNum, runeNum int) {
 	lineNum = l.lineNum
 	for _, c := range l.curBuffer {
 		if isEndOfLine(c) {
-			lineNum ++
+			lineNum++
 			runeNum = 0
 		} else {
-			runeNum ++
+			runeNum++
 		}
 	}
 	return
@@ -780,7 +772,8 @@ func (l *lexer) ignoreWhiteSpace() {
 	for {
 		r := l.next()
 		switch {
-		case r == eof:fallthrough
+		case r == eof:
+			fallthrough
 		case r == errRune:
 			return
 		case isWhiteSpace(r):
@@ -797,7 +790,8 @@ func (l *lexer) ignoreOneSpace() {
 	l.ignore()
 	r := l.next()
 	switch {
-	case r == eof:fallthrough
+	case r == eof:
+		fallthrough
 	case r == errRune:
 		return
 	case isSpace(r):
@@ -813,7 +807,8 @@ func (l *lexer) ignoreNewline() {
 	l.ignore()
 	r := l.next()
 	switch {
-	case r == eof:fallthrough
+	case r == eof:
+		fallthrough
 	case r == errRune:
 		return
 	case r == '\r':
@@ -848,12 +843,9 @@ func (l *lexer) ignoreN(n int) {
 	l.ignore()
 }
 
-
-
-
 // currentString returns the current buffer as a string
 func (l *lexer) currentString() (ret string) {
-	for _,c := range l.curBuffer {
+	for _, c := range l.curBuffer {
 		ret += string(c)
 	}
 	return
@@ -863,20 +855,20 @@ func (l *lexer) currentLen() int {
 	return len(l.curBuffer)
 }
 
-func (l *lexer) addNamedBlock (name string, text string, paramCount int) error {
+func (l *lexer) addNamedBlock(name string, text string, paramCount int) error {
 	if l.namedBlocks == nil {
 		l.namedBlocks = make(map[string]namedBlockEntry)
 	}
 	l.namedBlocks[name] = namedBlockEntry{text, paramCount, locationRef{
-		fileName: l.fileName,
+		fileName:  l.fileName,
 		blockName: l.blockName,
-		lineNum: l.lineNum,
-		offset: l.lineRuneNum,
+		lineNum:   l.lineNum,
+		offset:    l.lineRuneNum,
 	}}
 	return nil
 }
 
-func (l *lexer) getNamedBlock (name string) (block namedBlockEntry, ok bool) {
+func (l *lexer) getNamedBlock(name string) (block namedBlockEntry, ok bool) {
 	block, ok = l.namedBlocks[name]
 	return
 }

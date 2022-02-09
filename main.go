@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/goradd/got/internal/got"
 	"os"
 	"strings"
+
+	"github.com/goradd/got/internal/got"
 )
 
 var args string // A neat little trick to directly test the main function. If we are testing, this will get set.
@@ -41,8 +42,8 @@ func main() {
 	}
 	files := flag.Args()
 
-	if ret := got.Run(outDir,typ, runImports, includes, inputDirectory, files); ret != 0 {
-		os.Exit(ret)
+	if err := got.Run(outDir, typ, runImports, includes, inputDirectory, files); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 }
-

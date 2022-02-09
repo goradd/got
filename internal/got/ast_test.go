@@ -5,7 +5,7 @@ import "testing"
 func Test_quoteText(t *testing.T) {
 	tests := []struct {
 		name string
-		val string
+		val  string
 		want string
 	}{
 		{"standard text", "abc", "`abc`"},
