@@ -30,8 +30,10 @@ jobs:
     - name: Build
       run: go install
 
-    - name: Test Main
-      run: go test -v
+    - name: Test
+      run: go test -v -cover ./... -coverprofile cover.out -coverpkg ./...
       
-    - name: Test Internal
-      run: go test -v ./internal/got
+    - name: Go Coverage Badge
+      uses: tj-actions/coverage-badge-go@v1
+      with:
+        filename: cover.out
