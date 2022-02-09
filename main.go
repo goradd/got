@@ -42,7 +42,8 @@ func main() {
 	}
 	files := flag.Args()
 
-	if ret := got.Run(outDir, typ, runImports, includes, inputDirectory, files); ret != 0 {
-		os.Exit(ret)
+	if err := got.Run(outDir, typ, runImports, includes, inputDirectory, files); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
 }

@@ -21,43 +21,24 @@ var modules map[string]string
 var includePaths []string
 var includeNamedBlocks = make(map[string]namedBlockEntry)
 
+// Run processes the given GoT files with the given options.
+// It writes to the output files while processing, and returns an error if found.
 func Run(outDir string,
 	typ string,
 	runImports bool,
 	includes string,
 	inputDirectory string,
-	files []string) int {
+	files []string) (err error) {
 
 	var includeFiles []string
 
-	{
-		var err error
-		if modules, err = sys.ModulePaths(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, err.Error())
-			return 1
-		}
+	if modules, err = sys.ModulePaths(); err != nil {
+		return err
 	}
 
-	if includes != "" {
-		for includes != "" {
-			var cur string
-			if offset := strings.IndexAny(includes, ":;"); offset != -1 {
-				cur = includes[:offset]
-				includes = includes[offset+1:]
-			} else {
-				cur = includes
-				includes = ""
-			}
-			p := getRealPath(cur)
-			if fi, err := os.Stat(p); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "Include path %s: %s", p, err.Error())
-				return 1
-			} else if fi.IsDir() {
-				includePaths = append(includePaths, p)
-			} else {
-				includeFiles = append(includeFiles, p)
-			}
-		}
+	includeFiles, includePaths, err = processIncludeString(includes)
+	if err != nil {
+		return err
 	}
 
 	if inputDirectory != "" {
@@ -74,33 +55,28 @@ func Run(outDir string,
 	}
 
 	if outDir == "" {
-		var err error
 		if outDir, err = os.Getwd(); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "Could not use the current directory as the output directory: %s", err.Error())
-			return 1
+			return fmt.Errorf("could not use the current directory as the output directory: %s", err.Error())
 		}
 	}
 	outDir = getRealPath(outDir)
 
 	dstInfo, err := os.Stat(outDir)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "The output directory %s does not exist. Create the output directory and run it again.", outDir)
-		return 1
+		return fmt.Errorf("the output directory %s does not exist. Create the output directory and run it again", outDir)
 	}
 
 	if !dstInfo.Mode().IsDir() {
-		_, _ = fmt.Fprintf(os.Stderr, "The output directory specified is not a directory")
-		return 1
+		return fmt.Errorf("the output directory specified is not a directory")
 	}
 
 	if typ != "" {
 		files, _ = filepath.Glob(inputDirectory + "*." + typ)
 	}
 
-	asts, err := prepIncludeFiles(includeFiles)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, err.Error())
-		return 1
+	asts, err2 := prepIncludeFiles(includeFiles)
+	if err2 != nil {
+		return err2
 	}
 
 	// TODO: parallel multi-file processing with go routines
@@ -147,8 +123,7 @@ func Run(outDir string,
 		var a astType
 		a, err = buildAst(file, namedBlocks)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, err.Error())
-			return 1
+			return err
 		}
 
 		var asts2 []astType
@@ -157,24 +132,45 @@ func Run(outDir string,
 
 		err = outputAsts(newPath, asts2...)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, err.Error())
-			return 1
+			return err
 		}
 
 		files2 = append(files2, newPath)
 	}
 
-	// Since go typically does io asynchronously, we run our second stage after some pause to let the writes finish
 	for _, file := range files2 {
-		if n := postProcess(file, runImports); n > 0 {
-			return n
+		if err = postProcess(file, runImports); err != nil {
+			return err
 		}
 	}
-	return 0
+	return
 }
 
-func prepIncludeFiles(includes []string) (asts []astType, err error) {
-	for _, f := range includes {
+func processIncludeString(includes string) (includeFiles []string, includePaths []string, err error) {
+	for includes != "" {
+		var cur string
+		if offset := strings.IndexAny(includes, ":;"); offset != -1 {
+			cur = includes[:offset]
+			includes = includes[offset+1:]
+		} else {
+			cur = includes
+			includes = ""
+		}
+		p := getRealPath(cur)
+		if fi, err2 := os.Stat(p); err2 != nil {
+			err = fmt.Errorf("include path %s: %s", p, err2.Error())
+			return
+		} else if fi.IsDir() {
+			includePaths = append(includePaths, p)
+		} else {
+			includeFiles = append(includeFiles, p)
+		}
+	}
+	return
+}
+
+func prepIncludeFiles(includeFiles []string) (asts []astType, err error) {
+	for _, f := range includeFiles {
 		var a astType
 		a, err = buildAst(f, includeNamedBlocks)
 		if err == nil {
@@ -215,23 +211,21 @@ func outfilePath(file string, outDir string) string {
 	return file
 }
 
-func postProcess(file string, runImports bool) int {
+func postProcess(file string, runImports bool) (err error) {
 	if runImports {
 		curDir, _ := os.Getwd()
 		dir := filepath.Dir(file)
 		_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
-		_, err := sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
+		_, err = sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
 		_ = os.Chdir(curDir)
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
-				_, _ = fmt.Fprintln(os.Stderr, "error running goimports on file "+file+": "+e.Error()) // perhaps goimports is not installed?
-				return 1
+				return fmt.Errorf("error running goimports on file %s: %s", file, e.Error())
 			} else if err2, ok2 := err.(*exec.ExitError); ok2 {
 				// Likely a syntax error in the resulting file
-				_, _ = fmt.Fprintln(os.Stderr, string(err2.Stderr))
-				return 1
+				return fmt.Errorf("%s", err2.Stderr)
 			}
 		}
 	}
-	return 0
+	return nil
 }

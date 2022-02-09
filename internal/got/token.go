@@ -175,7 +175,7 @@ func init() {
 	tokens["}}"] = tokenItem{typ: itemEnd}
 }
 
-func (t tokenItem) FormatError() (s string) {
+func (t tokenItem) formatError() (s string) {
 	if t.typ == itemError {
 		s = "*** Error: " + t.val + "\n"
 		for _, c := range t.callStack {

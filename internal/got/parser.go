@@ -17,6 +17,11 @@ func parse(l *lexer) tokenItem {
 	topItem := tokenItem{typ: itemGo}
 	var endItem tokenItem
 	topItem.childItems, endItem = p.parseRun()
+
+	extraItem := <- p.lexer.items
+	if extraItem.typ != itemEOF {
+		endItem.typ = itemError // Turn this into an error, we must have too many end tags
+	}
 	// if we have an error that has no call stack, extract all the errors from the channel and build a call stack from them
 	if endItem.typ == itemError {
 		if len(endItem.callStack) <= 1 {
@@ -31,6 +36,7 @@ func parse(l *lexer) tokenItem {
 	return topItem
 }
 
+// parseRun parses a run of text. This is typically text that is between an open and close tag.
 func (p *parser) parseRun() (subItems []tokenItem, endItem tokenItem) {
 	for item := range p.lexer.items {
 		item2 := p.parseRunItem(item)
@@ -69,7 +75,7 @@ func (p *parser) parseRunItem(item tokenItem) tokenItem {
 	case itemGo:
 		var endItem tokenItem
 		item.childItems, endItem = p.parseRun()
-		if endItem.typ != itemEnd && endItem.typ != itemEndBlock {
+		if endItem.typ != itemEnd {
 			if endItem.typ == itemEOF {
 				endItem.typ = itemError
 				endItem.val = "unexpected end of file"

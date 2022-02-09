@@ -64,37 +64,45 @@ func TestGot(t *testing.T) {
 func Test_badIncludeFail(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/badInclude.tpl.got"})
-	assert.Equal(t, 1, ret)
+	err := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/badInclude.tpl.got"})
+	assert.Error(t, err)
 }
 
 func Test_badInclude2Fail(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badInclude2.tpl.got"})
-	assert.Equal(t, 1, ret)
+	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badInclude2.tpl.got"})
+	assert.Error(t, err)
 }
 
 func Test_tooManyParams(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/tooManyParams.tpl.got"})
-	assert.Equal(t, 1, ret)
+	err := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/tooManyParams.tpl.got"})
+	assert.Error(t, err)
 }
 
 func Test_badGo2(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badGo.tpl.got"})
-	assert.Equal(t, 1, ret)
+	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badGo.tpl.got"})
+	assert.Error(t, err)
 }
 
 func Test_badBlock(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badBlock.tpl.got"})
-	assert.Equal(t, 1, ret)
+	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badBlock.tpl.got"})
+	assert.Error(t, err)
 }
+
+func Test_tooManyEnds(t *testing.T) {
+	resetTemplates()
+
+	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/tooManyEnds.tpl.got"})
+	assert.Error(t, err)
+}
+
 
 func TestInfo(t *testing.T) {
 	resetTemplates()

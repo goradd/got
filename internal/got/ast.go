@@ -39,7 +39,7 @@ func buildAst(fileName string, namedBlocks map[string]namedBlockEntry) (ret astT
 	l := lexFile(fileName, inFile, namedBlocks)
 	ret.topItem = parse(l)
 	if ret.topItem.typ == itemError {
-		err = fmt.Errorf(ret.topItem.FormatError())
+		err = fmt.Errorf(ret.topItem.formatError())
 	}
 	return
 }

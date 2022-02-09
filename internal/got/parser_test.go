@@ -155,6 +155,12 @@ func Test_parseErr(t *testing.T) {
 		item := parseContent("{{ {{= a{{ b }} }} }}")
 		assert.Equal(t, itemError, item.typ)
 	})
+
+	t.Run("unexpect block end", func(t *testing.T) {
+		item := parseContent("{{ {{for}} }}")
+		assert.Equal(t, itemError, item.typ)
+	})
+
 }
 
 func Test_parseIfErr(t *testing.T) {
