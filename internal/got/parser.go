@@ -18,7 +18,7 @@ func parse(l *lexer) tokenItem {
 	var endItem tokenItem
 	topItem.childItems, endItem = p.parseRun()
 
-	extraItem := <- p.lexer.items
+	extraItem := <-p.lexer.items
 	if extraItem.typ != itemEOF {
 		endItem.typ = itemError // Turn this into an error, we must have too many end tags
 	}

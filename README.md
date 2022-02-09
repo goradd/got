@@ -1,4 +1,5 @@
-https://img.shields.io/github/workflow/status/goradd/got/Go
+![Build Status](https://img.shields.io/github/workflow/status/goradd/got/Go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/goradd/got)](https://goreportcard.com/report/github.com/goradd/got)
 # GoT
 
 GoT (short for go templates) is a template engine that generates fast go templates. 
@@ -6,8 +7,8 @@ GoT (short for go templates) is a template engine that generates fast go templat
 It is similar to some other 
 template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that is then compiled 
 into your program or a go plugin. This approach creates extremely fast templates, especially as
-compared to go's standard template engine. It also gives you much more freedom than Go's template
-engine, since at any time you can just switch to go code to do what you want.
+compared to go's standard template engine. Goradd also gives you much more freedom than other template engines, 
+since at any time you can just switch to go code to do what you want.
 
 - [Features](#features)
 - [Install](#install)
@@ -18,12 +19,11 @@ engine, since at any time you can just switch to go code to do what you want.
 
 ## Features
 
-- **High performance**. The templates utilize write buffers, which are known to be the fastest way to
-write strings in go. Since the resulting template is go code, your template will be compiled to fast
+- **High performance**. Since the resulting template is go code, your template will be compiled to fast
 machine code.
 - **Easy to use**. The templates themselves are embedded into your go code. The template language is pretty 
 simple and you can do a lot with only a few tags. You can switch into and out of go code at will. Tags are 
-Mustache-like, so somewhat go idiomatic.
+Mustache-like, so similar to Go's template engine.
 - **Flexible**. The template language makes very few assumptions about the go environment it is in. Most other
 template engines require you to call the template with a specific function signature. **GoT** gives you the
 freedom to call your templates how you want.

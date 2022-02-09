@@ -103,7 +103,6 @@ func Test_tooManyEnds(t *testing.T) {
 	assert.Error(t, err)
 }
 
-
 func TestInfo(t *testing.T) {
 	resetTemplates()
 
