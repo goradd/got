@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/goradd/got/internal/test/registry"
-	_ "github.com/goradd/got/internal/test/template"
+	"github.com/goradd/got/internal/testdata/registry"
+	_ "github.com/goradd/got/internal/testdata/template"
 )
 
 func main() {

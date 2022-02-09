@@ -23,11 +23,11 @@ func TestGot(t *testing.T) {
 
 	resetTemplates()
 
-	args = "-t got -i -o github.com/goradd/got/internal/test/template -I github.com/goradd/got/internal/test/src/inc2:github.com/goradd/got/internal/test/src/inc:github.com/goradd/got/internal/test/src/inc/testInclude4.inc -d github.com/goradd/got/internal/test/src"
+	args = "-t got -i -o github.com/goradd/got/internal/testdata/template -I github.com/goradd/got/internal/testdata/src/inc2:github.com/goradd/got/internal/testdata/src/inc:github.com/goradd/got/internal/testdata/src/inc/testInclude4.inc -d github.com/goradd/got/internal/testdata/src"
 
 	main()
 
-	testPath := filepath.Join(`./internal`, `test`)
+	testPath := filepath.Join(`./internal`, `testdata`)
 	runnerPath := filepath.Join(testPath, "runner", "runner.go")
 	comparePath := filepath.Join(testPath, "compare")
 	expectedPath := filepath.Join(testPath, "expected")
@@ -64,42 +64,42 @@ func TestGot(t *testing.T) {
 func Test_badIncludeFail(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/badInclude.tpl.got"})
+	err := got.Run("./internal/testdata/template", "", false, "", "", []string{"./internal/testdata/src/failureTests/badInclude.tpl.got"})
 	assert.Error(t, err)
 }
 
 func Test_badInclude2Fail(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badInclude2.tpl.got"})
+	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/badInclude2.tpl.got"})
 	assert.Error(t, err)
 }
 
 func Test_tooManyParams(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/tooManyParams.tpl.got"})
+	err := got.Run("./internal/testdata/template", "", false, "", "", []string{"./internal/testdata/src/failureTests/tooManyParams.tpl.got"})
 	assert.Error(t, err)
 }
 
 func Test_badGo2(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badGo.tpl.got"})
+	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/badGo.tpl.got"})
 	assert.Error(t, err)
 }
 
 func Test_badBlock(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badBlock.tpl.got"})
+	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/badBlock.tpl.got"})
 	assert.Error(t, err)
 }
 
 func Test_tooManyEnds(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/tooManyEnds.tpl.got"})
+	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/tooManyEnds.tpl.got"})
 	assert.Error(t, err)
 }
 
@@ -114,7 +114,7 @@ func TestInfo(t *testing.T) {
 }
 
 func resetTemplates() {
-	files, _ := filepath.Glob("./internal/test/template/*.tpl.go")
+	files, _ := filepath.Glob("./internal/testdata/template/*.tpl.go")
 	for _, f := range files {
 		_ = os.Remove(f)
 	}
