@@ -40,9 +40,11 @@ and you can define these fragments in include files. To use these fragments, you
 use the name of the fragment as the tag. This essentially gives you the ability to create your own template
 language. When you use a custom tag, you can also include parameters that will 
 replace placeholders in your fragment, giving you even more power to your custom tags. 
+- **Error Reporting**. Errors in your template files are identified by line and character
+number. No need to guess where the error is.
 
 Using other go libraries, you can have your templates compile when they are changed, 
-use buffer pools to increase performance, write to io.Writers, and more. Since the
+use buffer pools to increase performance, and more. Since the
 templates become go code, you can do what you imagine.
 
 
@@ -150,9 +152,7 @@ import (
 )
 
 func main() {
-	var b bytes.Buffer 
-	_ = template.OutTemplate(b)
-	_,_ = b.WriteTo(os.Stdout)
+	_ = template.OutTemplate(os.Stdout)
 }
 ```
 
@@ -336,7 +336,9 @@ Defined fragments start a block of text that can be included later in a template
 be sent as is, and then processed in whatever mode the template processor is in, as if that text was simply
 inserted into the template at that spot. You can include the `{{` or `{{g` tags inside of the fragment to
 force the processor into the text or go modes if needed. The fragment can be defined
-any time before it is included, including being defined in other include files. You can add optional parameters
+any time before it is included, including being defined in other include files. 
+
+You can add optional parameters
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed
 to have a parameter that has a quote in it.
@@ -514,7 +516,7 @@ func writeTemplate(ctx context.Context, buf *bytes.Buffer) {
 {{# Define the body that will be inserted into the template }}
 {{< body }}
 <p>
-The caller is: {{=s ctx.Value("something") }}
+The caller is: {{=s ctx.Value("caller") }}
 </p>
 {{end body}}
 
@@ -533,9 +535,7 @@ type myHandler struct {}
 
 func (h myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)  {
 	ctx :=  context.WithValue(r.Context(), "caller", r.Referer())
-	b := new(bytes.Buffer)
-	writeTemplate(ctx, b)	// call the got template
-	w.Write(b.Bytes())
+	writeTemplate(ctx, w)	// call the got template
 }
 
 
