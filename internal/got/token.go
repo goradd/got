@@ -28,9 +28,8 @@ type tokenItem struct {
 }
 
 const (
-	tokEndBlock = "{{end}}"
-	tokEnd      = "}}"
-	tokBegin    = "{{"
+	tokEnd   = "}}"
+	tokBegin = "{{"
 )
 
 const (

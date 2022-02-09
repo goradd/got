@@ -36,7 +36,7 @@ func writeFile(b []byte, file string, outDir string) {
 
 	dir := outDir
 	dir, _ = filepath.Abs(dir)
-	file = filepath.Join(outDir, file)
+	file = filepath.Join(dir, file)
 
 	_ = ioutil.WriteFile(file, b, os.ModePerm)
 }

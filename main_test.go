@@ -64,35 +64,35 @@ func TestGot(t *testing.T) {
 func Test_badIncludeFail(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/badInclude.got"})
+	ret := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/badInclude.tpl.got"})
 	assert.Equal(t, 1, ret)
 }
 
 func Test_badInclude2Fail(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badInclude2.got"})
+	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badInclude2.tpl.got"})
 	assert.Equal(t, 1, ret)
 }
 
 func Test_tooManyParams(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/tooManyParams.got"})
+	ret := got.Run("./internal/test/template", "", false, "", "", []string{"./internal/test/src/failureTests/tooManyParams.tpl.got"})
 	assert.Equal(t, 1, ret)
 }
 
 func Test_badGo2(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badGo.got"})
+	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badGo.tpl.got"})
 	assert.Equal(t, 1, ret)
 }
 
 func Test_badBlock(t *testing.T) {
 	resetTemplates()
 
-	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badBlock.got"})
+	ret := got.Run("./internal/test/template", "", true, "", "", []string{"./internal/test/src/failureTests/badBlock.tpl.got"})
 	assert.Equal(t, 1, ret)
 }
 
@@ -107,7 +107,7 @@ func TestInfo(t *testing.T) {
 }
 
 func resetTemplates() {
-	files, _ := filepath.Glob("./internal/test/template/*.go")
+	files, _ := filepath.Glob("./internal/test/template/*.tpl.go")
 	for _, f := range files {
 		_ = os.Remove(f)
 	}
