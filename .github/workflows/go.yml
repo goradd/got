@@ -31,25 +31,28 @@ jobs:
       run: go install
 
     - name: Test
-      run: 
+      run: |
         go test -v -cover ./... -coverprofile coverage.out -coverpkg ./...
-        go tool cover -func=coverage.out -o=coverage.out
+        go tool cover -func coverage.out -o coverage.out
 
     - name: Go Coverage Badge
       uses: tj-actions/coverage-badge-go@v1
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ runner.os == 'Linux' && matrix.go == '1.17' }}
       with:
+        green: 80
         filename: coverage.out
-        
-    - name: Verify Changed files
-      uses: tj-actions/verify-changed-files@v8.1
-      id: verify-changed-files
+
+    - uses: stefanzweifel/git-auto-commit-action@v4
+      id: auto-commit-action
       with:
-        files: README.md
+        commit_message: Apply Code Coverage Badge
+        skip_fetch: true
+        skip_checkout: true
+        file_pattern: ./README.md
 
     - name: Push changes
-      if: steps.verify-changed-files.outputs.files_changed == 'true'
+      if: steps.auto-commit-action.outputs.changes_detected == 'true'
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ github.token }}
-        branch: ${{ github.head_ref }}
+        branch: ${{ github.ref }}

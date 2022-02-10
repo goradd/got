@@ -1,4 +1,5 @@
 ![Build Status](https://img.shields.io/github/workflow/status/goradd/got/Go)
+![Coverage](https://img.shields.io/badge/Coverage-94.4%25-brightgreen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/goradd/got)](https://goreportcard.com/report/github.com/goradd/got)
 # GoT
 
