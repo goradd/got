@@ -179,18 +179,17 @@ func (t tokenItem) formatError() (s string) {
 	if t.typ == itemError {
 		s = "*** Error: " + t.val + "\n"
 		for _, c := range t.callStack {
-			s += "    from " + c.formatErrorLine() + "\n"
+			s += "    " + c.formatErrorLine() + "\n"
 		}
 	}
 	return
 }
 
 func (r locationRef) formatErrorLine() (s string) {
-	s += fmt.Sprintf("line: %d, offset: %d ", r.lineNum+1, r.offset)
 	if r.blockName != "" {
-		s += "of block: " + r.blockName
+		s += fmt.Sprintf("Block %s:%d:%d", r.blockName, r.lineNum+1, r.offset)
 	} else {
-		s += "of file: " + r.fileName
+		s += fmt.Sprintf("%s:%d:%d", r.fileName, r.lineNum+1, r.offset)
 	}
 	return
 }
