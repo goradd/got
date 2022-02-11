@@ -4,20 +4,25 @@
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go#template-engines)
 # GoT
 
-GoT (short for go templates) is a template engine that generates fast go templates. 
+GoT (short for Go Templates) is a flexible template engine that generates Go code.
 
-It is similar to some other 
-template engines, like [hero](https://github.com/shiyanhui/hero), in that it generates go code that is then compiled 
-into your program or a go plugin. This approach creates extremely fast templates, especially as
-compared to go's standard template engine. Goradd also gives you much more freedom than other template engines, 
-since at any time you can just switch to go code to do what you want.
+This approach creates extremely fast templates. It also gives you much more freedom than Go's template
+engine, since at any time you can just switch to Go code to do what you want.
+
+GoT has:
+- Mustache-like syntax similar to Go's built-in template engine
+- The ability to define new tags, so you can create your own template syntax
+- Include files, so you can create a library of tags and templates 
+
+The GoT syntax is easy to learn. Get started in minutes.
 
 - [Features](#features)
-- [Install](#install)
-- [Usage](#usage)
-- [Quick Start](#quick-start)
+- [Installation](#installation)
+- [Command Line Usage](#command-line-usage)
+- [Basic Syntax](#basic-syntax)
 - [Template Syntax](#template-syntax)
 - [License](#license)
+- [Acknowledgements](#acknowledgements)
 
 ## Features
 
@@ -47,23 +52,23 @@ number. No need to guess where the error is.
 
 Using other go libraries, you can have your templates compile when they are changed, 
 use buffer pools to increase performance, and more. Since the
-templates become go code, you can do what you imagine.
+templates become go code, you can do what you want.
 
 
 ## Installation
 
 ```shell
-go get -u github.com/goradd/got/got
+go install github.com/goradd/got/got@latest
 ```
 
-GoT will format any resulting go code using `go fmt`, but we recommend installing `goimports` 
-and passing it the -i flag on the command line to use goimports instead, since that will add the
-additional service of fixing up the import lines of any generated go files.
+We also recommend installing `goimports` 
+and passing GoT the -i flag on the command line. That will format your Go code and 
+fix up the import lines of any generated go files.
 ```shell
-go get -u golang.org/x/tools/cmd/goimports
+go install golang.org/x/tools/cmd/goimports@latest
 ```
 
-## Usage
+## Command Line Usage
 
 ```shell
 got [options] [files]
@@ -163,7 +168,7 @@ you can separate your go code from template code if you want.
 
 ## Template Syntax
 
-The following describes how open tags work. Most tags end with a ` }}`, unless otherwise indicated.
+The following describes how the various open tags work. Most tags end with a ` }}`, unless otherwise indicated.
 Many tags have a short and a long form. Using the long form does not impact performance, its just there
 to help your templates have some human readable context to them if you want that.
 
@@ -564,9 +569,7 @@ got template.got
 Build your application and go to `http://localhost:8000` in your browser, to see your results
 
 ## License
-
 Got is licensed under the MIT License.
-
 
 ## Acknowldgements
 
