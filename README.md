@@ -109,7 +109,7 @@ In the resulting Go code, text will get written to output by calling:
 
  ```_, err = io.WriteString(_w, <text>)``` 
 
-Got assumes that the `_w` variable
+GoT assumes that the `_w` variable
 is available and satisfies the io.Writer interface
 and optionally the io.StringWriter interface.
 Usually you would do this by declaring a function at the top of your template that looks like this:
@@ -142,7 +142,7 @@ func OutTemplate(_w io.Writer) (err error) {
 }
 ```
 
-To compile this template, call got:
+To compile this template, call GoT:
 ```shell
 got example.got
 ```
@@ -164,13 +164,13 @@ func main() {
 ```
 
 This simple example shows a mix of go code and template syntax in the same file. Using GoT's include files,
-you can separate your go code from template code if you want.
+you can separate your go code from template code.
 
 ## Template Syntax
 
 The following describes how the various open tags work. Most tags end with a ` }}`, unless otherwise indicated.
 Many tags have a short and a long form. Using the long form does not impact performance, its just there
-to help your templates have some human readable context to them if you want that.
+to help your templates have some human readable context to them.
 
 ### Static Text
     {{<space or newline>   Begin to output text as written.
@@ -313,13 +313,13 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 ```
 
 ### Include Files
-#### Include a got source file
+#### Include a GoT source file
 
     {{: "fileName" }} or {{include "fileName" }}   Inserts the given file name into the template.
 
  The included file will start in whatever mode the receiving template is in, as if the text was inserted
  at that spot, so if the include tags are  put inside of go code, the included file will start in go mode. 
- The file will then be processed like any other got file. Include files can refer to other include files,
+ The file will then be processed like any other GoT file. Include files can refer to other include files,
  and so are recursive.
  
  Include files are searched for in the current directory, and in the list of include directories provided
@@ -469,9 +469,9 @@ From within most of the GoT tags, you can insert another GoT tag. GoT will be lo
 as it processes text. If you would like to turn off GoT's processing to output text that looks just like a GoT tag,
 you can use:
 
-    {{begin *endTag*}} Starts a strict text block and turns off the got parser. 
+    {{begin *endTag*}}   Starts a strict text block and turns off the GoT parser. 
     
-One thing this is useful for is to use Got to generate Got code.
+One thing this is useful for is to use GoT to generate GoT code.
 End the block with a `{{end *endTag*}}` tag, where `*endTag*` is whatever you specified in the begin tag. 
 There can be no space between the endTag and the final brackets
 The following example will output the entire second line of code with no changes, 
@@ -542,7 +542,7 @@ type myHandler struct {}
 
 func (h myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)  {
 	ctx :=  context.WithValue(r.Context(), "caller", r.Referer())
-	writeTemplate(ctx, w)	// call the got template
+	writeTemplate(ctx, w)	// call the GoT template
 }
 
 
@@ -569,7 +569,7 @@ got template.got
 Build your application and go to `http://localhost:8000` in your browser, to see your results
 
 ## License
-Got is licensed under the MIT License.
+GoT is licensed under the MIT License.
 
 ## Acknowldgements
 
