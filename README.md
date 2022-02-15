@@ -1,3 +1,4 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/goradd/got.svg)](https://pkg.go.dev/github.com/goradd/got)
 ![Build Status](https://img.shields.io/github/workflow/status/goradd/got/Go)
 [![codecov](https://codecov.io/gh/goradd/got/branch/main/graph/badge.svg?token=FHU0NR2N1V)](https://codecov.io/gh/goradd/got)
 [![Go Report Card](https://goreportcard.com/badge/github.com/goradd/got)](https://goreportcard.com/report/github.com/goradd/got)
