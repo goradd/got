@@ -2,6 +2,7 @@ package got
 
 import (
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"os"
 	"os/exec"
@@ -79,14 +80,14 @@ func Run(outDir string,
 		return err2
 	}
 
+	g := new(errgroup.Group)
 	for _, file := range files {
-		err = processFile(file, outDir, asts, runImports)
-		if err != nil {
-			return err
-		}
+		f := file
+		g.Go(func () error {
+			return processFile(f, outDir, asts, runImports)
+		})
 	}
-
-	return
+	return g.Wait()
 }
 
 func processFile(file, outDir string, asts []astType, runImports bool) error {
@@ -141,7 +142,7 @@ func processFile(file, outDir string, asts []astType, runImports bool) error {
 	if err != nil {
 		return err
 	}
-	return postProcess(file, runImports)
+	return postProcess(newPath, runImports)
 }
 
 func processIncludeString(includes string) (includeFiles []string, includePaths []string, err error) {

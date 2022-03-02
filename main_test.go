@@ -20,6 +20,12 @@ import (
 // the main file as part of the test.
 func TestGot(t *testing.T) {
 	// args is a global in the main package just for testing
+	testPath := filepath.Join(`./internal`, `testdata`)
+	runnerPath := filepath.Join(testPath, "runner", "runner.go")
+	comparePath := filepath.Join(testPath, "compare")
+	expectedPath := filepath.Join(testPath, "expected")
+	cmd := "go run " + runnerPath + " " + comparePath
+	curDir, _ := os.Getwd()
 
 	resetTemplates()
 
@@ -27,11 +33,9 @@ func TestGot(t *testing.T) {
 
 	main()
 
-	testPath := filepath.Join(`./internal`, `testdata`)
-	runnerPath := filepath.Join(testPath, "runner", "runner.go")
-	comparePath := filepath.Join(testPath, "compare")
-	expectedPath := filepath.Join(testPath, "expected")
-	cmd := "go run " + runnerPath + " " + comparePath
+	// main seems to be changing working dir
+	_ = os.Chdir(curDir)
+
 	if _, err := sys.ExecuteShellCommand(cmd); err != nil {
 		if e, ok := err.(*exec.Error); ok {
 			_, _ = fmt.Fprintln(os.Stderr, "error testing runner.go :"+e.Error()) // perhaps goimports is not installed?
