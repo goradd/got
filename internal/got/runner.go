@@ -2,6 +2,7 @@ package got
 
 import (
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"os"
 	"os/exec"
@@ -79,71 +80,69 @@ func Run(outDir string,
 		return err2
 	}
 
-	// TODO: parallel multi-file processing with go routines
-	var files2 []string
+	g := new(errgroup.Group)
 	for _, file := range files {
-		newPath := outfilePath(file, outDir)
-		// duplicate the named blocks from the include files before passing them to individual files
-		namedBlocks := make(map[string]namedBlockEntry)
-		for k, v := range includeNamedBlocks {
-			namedBlocks[k] = v
-		}
+		f := file
+		g.Go(func () error {
+			return processFile(f, outDir, asts, runImports)
+		})
+	}
+	return g.Wait()
+}
 
-		// Default named block values
-		file, _ = filepath.Abs(file)
-		root := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
-		for {
-			ext := filepath.Ext(root)
-			if ext == "" {
-				break
-			}
-			root = strings.TrimSuffix(root, ext)
-		}
-
-		namedBlocks["templatePath"] = namedBlockEntry{file, 0, locationRef{}}
-		namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0, locationRef{}}
-		namedBlocks["templateRoot"] = namedBlockEntry{root, 0, locationRef{}}
-		namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
-
-		newPath, _ = filepath.Abs(newPath)
-		root = strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath))
-		for {
-			ext := filepath.Ext(root)
-			if ext == "" {
-				break
-			}
-			root = strings.TrimSuffix(root, ext)
-		}
-
-		namedBlocks["outPath"] = namedBlockEntry{newPath, 0, locationRef{}}
-		namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0, locationRef{}}
-		namedBlocks["outRoot"] = namedBlockEntry{root, 0, locationRef{}}
-		namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0, locationRef{}}
-
-		var a astType
-		a, err = buildAst(file, namedBlocks)
-		if err != nil {
-			return err
-		}
-
-		var asts2 []astType
-		asts2 = append(asts2, asts...)
-		asts2 = append(asts2, a)
-
-		err = outputAsts(newPath, asts2...)
-		if err != nil {
-			return err
-		}
-
-		files2 = append(files2, newPath)
+func processFile(file, outDir string, asts []astType, runImports bool) error {
+	newPath := outfilePath(file, outDir)
+	// duplicate the named blocks from the include files before passing them to individual files
+	namedBlocks := make(map[string]namedBlockEntry)
+	for k, v := range includeNamedBlocks {
+		namedBlocks[k] = v
 	}
 
-	for _, file := range files2 {
-		if err = postProcess(file, runImports); err != nil {
-			return err
+	// Default named block values
+	file, _ = filepath.Abs(file)
+	root := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
+	for {
+		ext := filepath.Ext(root)
+		if ext == "" {
+			break
 		}
+		root = strings.TrimSuffix(root, ext)
 	}
-	return
+
+	namedBlocks["templatePath"] = namedBlockEntry{file, 0, locationRef{}}
+	namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0, locationRef{}}
+	namedBlocks["templateRoot"] = namedBlockEntry{root, 0, locationRef{}}
+	namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
+
+	newPath, _ = filepath.Abs(newPath)
+	root = strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath))
+	for {
+		ext := filepath.Ext(root)
+		if ext == "" {
+			break
+		}
+		root = strings.TrimSuffix(root, ext)
+	}
+
+	namedBlocks["outPath"] = namedBlockEntry{newPath, 0, locationRef{}}
+	namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0, locationRef{}}
+	namedBlocks["outRoot"] = namedBlockEntry{root, 0, locationRef{}}
+	namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0, locationRef{}}
+
+	a, err := buildAst(file, namedBlocks)
+	if err != nil {
+		return err
+	}
+
+	var asts2 []astType
+	asts2 = append(asts2, asts...)
+	asts2 = append(asts2, a)
+
+	err = outputAsts(newPath, asts2...)
+	if err != nil {
+		return err
+	}
+	return postProcess(newPath, runImports)
 }
 
 func processIncludeString(includes string) (includeFiles []string, includePaths []string, err error) {
@@ -213,11 +212,7 @@ func outfilePath(file string, outDir string) string {
 
 func postProcess(file string, runImports bool) (err error) {
 	if runImports {
-		curDir, _ := os.Getwd()
-		dir := filepath.Dir(file)
-		_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
-		_, err = sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
-		_ = os.Chdir(curDir)
+		_, err = sys.ExecuteShellCommand("goimports -w " + file)
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
 				return fmt.Errorf("error running goimports on file %s: %s", file, e.Error())
