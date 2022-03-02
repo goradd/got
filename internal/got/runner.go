@@ -212,11 +212,7 @@ func outfilePath(file string, outDir string) string {
 
 func postProcess(file string, runImports bool) (err error) {
 	if runImports {
-		curDir, _ := os.Getwd()
-		dir := filepath.Dir(file)
-		_ = os.Chdir(dir) // run it from the file's directory to pick up the correct go.mod file if there is one
-		_, err = sys.ExecuteShellCommand("goimports -w " + filepath.Base(file))
-		_ = os.Chdir(curDir)
+		_, err = sys.ExecuteShellCommand("goimports -w " + file)
 		if err != nil {
 			if e, ok := err.(*exec.Error); ok {
 				return fmt.Errorf("error running goimports on file %s: %s", file, e.Error())
