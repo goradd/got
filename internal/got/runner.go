@@ -2,7 +2,6 @@ package got
 
 import (
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"log"
 	"os"
 	"os/exec"
@@ -31,14 +30,7 @@ func Run(outDir string,
 	inputDirectory string,
 	files []string) (err error) {
 
-	var includeFiles []string
-
 	if modules, err = sys.ModulePaths(); err != nil {
-		return err
-	}
-
-	includeFiles, includePaths, err = processIncludeString(includes)
-	if err != nil {
 		return err
 	}
 
@@ -49,45 +41,73 @@ func Run(outDir string,
 		}
 	}
 
-	if inputDirectory == "" {
-		includePaths = append(includePaths, getRealPath("."))
-	} else {
-		includePaths = append(includePaths, inputDirectory)
-	}
-
-	if outDir == "" {
-		if outDir, err = os.Getwd(); err != nil {
-			return fmt.Errorf("could not use the current directory as the output directory: %s", err.Error())
-		}
-	}
-	outDir = getRealPath(outDir)
-
-	dstInfo, err := os.Stat(outDir)
-	if err != nil {
-		return fmt.Errorf("the output directory %s does not exist. Create the output directory and run it again", outDir)
-	}
-
-	if !dstInfo.Mode().IsDir() {
-		return fmt.Errorf("the output directory specified is not a directory")
-	}
-
 	if typ != "" {
 		files, _ = filepath.Glob(inputDirectory + "*." + typ)
 	}
 
-	asts, err2 := prepIncludeFiles(includeFiles)
-	if err2 != nil {
-		return err2
+	var cwd string
+	cwd, err = os.Getwd()
+	if err != nil {
+		return fmt.Errorf("could not get the current directory: %s", err.Error())
 	}
-
-	g := new(errgroup.Group)
 	for _, file := range files {
 		f := file
-		g.Go(func () error {
-			return processFile(f, outDir, asts, runImports)
-		})
+		fmt.Printf("Processing %s\n", f)
+		f = filepath.FromSlash(f)
+		dir, _ := filepath.Split(f)
+		if dir != "" {
+			if err = os.Chdir(dir); err != nil {
+				return fmt.Errorf("could not change to directory %s:%s", dir, err.Error())
+				return err
+			}
+		}
+
+		var includeFiles []string
+		includeFiles, includePaths, err = processIncludeString(includes)
+		if err != nil {
+			return err
+		}
+
+		if inputDirectory == "" || dir == "" {
+			includePaths = append(includePaths, cwd)
+		} else {
+			includePaths = append(includePaths, dir)
+		}
+
+		outDir2 := outDir
+		if outDir2 == "" {
+			outDir2 = dir
+			if outDir2 == "" {
+				outDir2 = cwd
+			}
+		}
+		outDir2 = getRealPath(outDir2)
+
+		dstInfo, err2 := os.Stat(outDir2)
+		if err2 != nil {
+			return fmt.Errorf("the output directory %s does not exist. Create the output directory and run it again", outDir2)
+		}
+		if !dstInfo.Mode().IsDir() {
+			return fmt.Errorf("the output directory specified is not a directory")
+		}
+
+		asts, err3 := prepIncludeFiles(includeFiles)
+		if err3 != nil {
+			return err3
+		}
+
+		err = processFile(f, outDir2, asts, runImports)
+
+		if dir != "" {
+			if err2 := os.Chdir(cwd); err2 != nil {
+				return fmt.Errorf("could not change to cwd %s:%s", cwd, err2.Error())
+			}
+		}
+		if err != nil {
+			return err
+		}
 	}
-	return g.Wait()
+	return
 }
 
 func processFile(file, outDir string, asts []astType, runImports bool) error {
@@ -186,6 +206,7 @@ func getRealPath(path string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	newPath = filepath.FromSlash(newPath)
 	return newPath
 }
 
