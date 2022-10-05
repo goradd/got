@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,8 +51,8 @@ func TestGot(t *testing.T) {
 	files, _ := filepath.Glob(expectedPath + string(os.PathSeparator) + "*.out")
 
 	for _, file := range files {
-		compare, _ := ioutil.ReadFile(file)
-		if expected, err := ioutil.ReadFile(filepath.Join(comparePath, filepath.Base(file))); err != nil {
+		compare, _ := os.ReadFile(file)
+		if expected, err := os.ReadFile(filepath.Join(comparePath, filepath.Base(file))); err != nil {
 			t.Error(err)
 		} else {
 			expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
