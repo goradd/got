@@ -355,7 +355,7 @@ any time before it is included, including being defined in other include files.
 You can add optional parameters
 to a fragment that will be substituted for placeholders when the fragment is used. You can have up to 9
 placeholders ($1 - $9). Parameters should be separated by commas, and can be surrounded by quotes if needed
-to have a parameter that has a quote in it.
+to have a parameter that has a quote or comma in it.
 
     {{< fragName }} or {{define fragName }}   Start a block called "fragName".
     {{< fragName <count>}} or                 Start a block called "fragName" that will 
@@ -372,7 +372,6 @@ unless you use {{>? or {{put? to include the fragment.
 
 param1, param2, ... are optional parameters that will be substituted for $1, $2, ... in the defined fragment.
 If a parameter is not included when using a fragment, an empty value will be substituted for the parameter in the fragment.
-
 
 The fragment name is NOT surrounded by quotes, and cannot contain any whitespace in the name. Blocks are ended with a
 `{{end fragName}}` tag. The end tag must be just like that, with no spaces after the fragName.

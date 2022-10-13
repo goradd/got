@@ -10,7 +10,7 @@ type parser struct {
 
 // parse is the main entry point for the recursive parsing process.
 //
-// parse should return either return a single item that represents the top of the ast tree,
+// parse should return either a single item that represents the top of the ast tree,
 // or an error item that contains the details of what and where the error happened.
 func parse(l *lexer) tokenItem {
 	p := parser{lexer: l}
