@@ -344,5 +344,5 @@ func fileIsNewer(path1, path2 string) bool {
 	}
 	modTime1 := file1.ModTime()
 	modTime2 := file2.ModTime()
-	return modTime1.Compare(modTime2) > 0
+	return modTime1.After(modTime2)
 }

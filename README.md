@@ -1,5 +1,5 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/goradd/got.svg)](https://pkg.go.dev/github.com/goradd/got)
-![Build Status](https://img.shields.io/github/workflow/status/goradd/got/Go)
+![Build Status](https://img.shields.io/github/actions/workflow/status/goradd/got/go.yml?branch=main)
 [![codecov](https://codecov.io/gh/goradd/got/branch/main/graph/badge.svg?token=FHU0NR2N1V)](https://codecov.io/gh/goradd/got)
 [![Go Report Card](https://goreportcard.com/badge/github.com/goradd/got)](https://goreportcard.com/report/github.com/goradd/got)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go#template-engines)
