@@ -97,9 +97,9 @@ func TestRecursiveGot(t *testing.T) {
 	files2, _ := filepath.Glob(outPath2 + string(os.PathSeparator) + "*.go")
 
 	assert.Len(t, files1, 1)
-	assert.Equal(t, "/r1.tpl.go", strings.TrimPrefix(files1[0], outPath1))
+	assert.Equal(t, "r1.tpl.go", filepath.Base(files1[0]))
 	assert.Len(t, files2, 1)
-	assert.Equal(t, "/r2.tpl.go", strings.TrimPrefix(files2[0], outPath2))
+	assert.Equal(t, "r2.tpl.go", filepath.Base(files2[0]))
 	assert.True(t, strings.HasPrefix(b.String(), "Processing"))
 
 	// Running this again shows that files were not processed
