@@ -90,6 +90,10 @@ options:
 	     current directory, the correct go.mod file will be searched to know where to look 
 	     for include files.
 	- d  directory: When using the -t option, will specify a directory to search.
+	- v  verbose: Prints information about files being processed
+	- r  recursive: Recursively processes directories. Used with the -t option and possibley -d.
+	- f  force: Output files are normally not over-written if they are newer than the input file.
+	     This otpion will force all input files to over-write the output files.
 ```
 If a path described above starts with a module path, the actual disk location 
 will be substituted.
