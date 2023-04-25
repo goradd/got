@@ -77,9 +77,16 @@ func TestRecursiveGot(t *testing.T) {
 	var b bytes.Buffer
 	got.OutWriter = &b
 
-	args = "-t got -r -v -d github.com/goradd/got/internal/testdata/src/recurse"
-
-	main()
+	err := got.Run("",
+		"got",
+		false,
+		"",
+		"github.com/goradd/got/internal/testdata/src/recurse",
+		nil,
+		true,
+		true,
+		false)
+	assert.NoError(t, err)
 
 	// main seems to be changing working dir
 	_ = os.Chdir(curDir)
@@ -97,7 +104,7 @@ func TestRecursiveGot(t *testing.T) {
 
 	// Running this again shows that files were not processed
 	b.Reset()
-	err := got.Run("",
+	err = got.Run("",
 		"got",
 		false,
 		"",
