@@ -2,6 +2,7 @@ package got
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -21,6 +22,9 @@ var modules map[string]string
 var includePaths []string
 var includeNamedBlocks = make(map[string]namedBlockEntry)
 
+// OutWriter helps us intercept output for testing
+var OutWriter io.Writer = os.Stdout
+
 // Run processes the given GoT files with the given options.
 // It writes to the output files while processing, and returns an error if found.
 func Run(outDir string,
@@ -28,7 +32,10 @@ func Run(outDir string,
 	runImports bool,
 	includes string,
 	inputDirectory string,
-	files []string) (err error) {
+	files []string,
+	verbose bool,
+	recursive bool,
+	force bool) (err error) {
 
 	if modules, err = sys.ModulePaths(); err != nil {
 		return err
@@ -41,8 +48,23 @@ func Run(outDir string,
 		}
 	}
 
-	if typ != "" {
-		files, _ = filepath.Glob(inputDirectory + "*." + typ)
+	if recursive && typ == "" {
+		return fmt.Errorf("-t is required when specifying -r")
+	}
+
+	if recursive && outDir != "" {
+		return fmt.Errorf("cannot specify an output directory when using the recursive option")
+	}
+
+	files, err = gatherFiles(files,
+		inputDirectory,
+		outDir,
+		typ,
+		recursive,
+		force,
+	)
+	if err != nil {
+		return err
 	}
 
 	var cwd string
@@ -52,13 +74,14 @@ func Run(outDir string,
 	}
 	for _, file := range files {
 		f := file
-		fmt.Printf("Processing %s\n", f)
+		if verbose {
+			fmt.Fprintf(OutWriter, "Processing %s\n", f)
+		}
 		f = filepath.FromSlash(f)
 		dir, _ := filepath.Split(f)
 		if dir != "" {
 			if err = os.Chdir(dir); err != nil {
 				return fmt.Errorf("could not change to directory %s:%s", dir, err.Error())
-				return err
 			}
 		}
 
@@ -244,4 +267,82 @@ func postProcess(file string, runImports bool) (err error) {
 		}
 	}
 	return nil
+}
+
+// Make a list of all the files that will be processed.
+func gatherFiles(inFiles []string, inputDir string, outputDir string, suffix string, recursive bool, force bool) (files []string, err error) {
+	var dirs []string
+
+	if suffix != "" {
+		if inputDir == "" {
+			inputDir = "." // CWD
+		}
+		if recursive {
+			dirs, err = getRecursiveDirectories(inputDir)
+			if err != nil {
+				return
+			}
+		} else {
+			inputDir, err = filepath.Abs(inputDir)
+			if err != nil {
+				return
+			}
+			dirs = []string{inputDir}
+		}
+
+		inFiles = []string{}
+		for _, dir := range dirs {
+			f, _ := filepath.Glob(dir + "/*." + suffix)
+			inFiles = append(inFiles, f...)
+		}
+	}
+
+	if force {
+		files = inFiles
+		return
+	}
+
+	for _, f := range inFiles {
+		o := outfilePath(f, outputDir)
+		if fileIsNewer(f, o) {
+			files = append(files, f)
+		}
+	}
+
+	return
+}
+
+// Returns all the directories inside the given directory, and including the given directory.
+func getRecursiveDirectories(dirPath string) (dirs []string, err error) {
+	dirPath, err = filepath.Abs(dirPath)
+	if err != nil {
+		return
+	}
+	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // ignore errors
+		}
+		if info.IsDir() {
+			dirs = append(dirs, path)
+		}
+		return nil
+	})
+	return
+}
+
+// fileIsNewer returns true if the file at path1 is newer than the file at path2. If
+// there is no file at path2, returns true
+// If there is no file at path1, return false
+func fileIsNewer(path1, path2 string) bool {
+	file1, err := os.Stat(path1)
+	if err != nil {
+		return false
+	}
+	file2, err := os.Stat(path2)
+	if err != nil {
+		return true
+	}
+	modTime1 := file1.ModTime()
+	modTime2 := file2.ModTime()
+	return modTime1.After(modTime2)
 }

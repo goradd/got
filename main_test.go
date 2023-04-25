@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goradd/gofile/pkg/sys"
@@ -64,45 +65,181 @@ func TestGot(t *testing.T) {
 	}
 }
 
+// TestRecursiveGot is an alternate test for testing some of the command line options.
+func TestRecursiveGot(t *testing.T) {
+	// args is a global in the main package just for testing
+	outPath1 := filepath.Join(`./internal`, `testdata`, `src`, `recurse`)
+	outPath2 := filepath.Join(outPath1, `rdir`)
+	curDir, _ := os.Getwd()
+
+	resetTemplates()
+
+	var b bytes.Buffer
+	got.OutWriter = &b
+
+	err := got.Run("",
+		"got",
+		false,
+		"",
+		"github.com/goradd/got/internal/testdata/src/recurse",
+		nil,
+		true,
+		true,
+		false)
+	assert.NoError(t, err)
+
+	// main seems to be changing working dir
+	_ = os.Chdir(curDir)
+
+	// verify outputs were created
+
+	files1, _ := filepath.Glob(outPath1 + string(os.PathSeparator) + "*.go")
+	files2, _ := filepath.Glob(outPath2 + string(os.PathSeparator) + "*.go")
+
+	assert.Len(t, files1, 1)
+	assert.Equal(t, "r1.tpl.go", filepath.Base(files1[0]))
+	assert.Len(t, files2, 1)
+	assert.Equal(t, "r2.tpl.go", filepath.Base(files2[0]))
+	assert.True(t, strings.HasPrefix(b.String(), "Processing"))
+
+	// Running this again shows that files were not processed
+	b.Reset()
+	err = got.Run("",
+		"got",
+		false,
+		"",
+		"github.com/goradd/got/internal/testdata/src/recurse",
+		nil,
+		true,
+		true,
+		false)
+	assert.NoError(t, err)
+	assert.False(t, strings.HasPrefix(b.String(), "Processing"))
+
+	// Running it again with force on shows that files were processed
+	b.Reset()
+	err = got.Run("",
+		"got",
+		false,
+		"",
+		"github.com/goradd/got/internal/testdata/src/recurse",
+		nil,
+		true,
+		true,
+		true)
+	assert.NoError(t, err)
+	assert.True(t, strings.HasPrefix(b.String(), "Processing"))
+
+	resetTemplates()
+}
+
+func Test_badFlags1(t *testing.T) {
+	resetTemplates()
+
+	err := got.Run("./internal/testdata/template",
+		"",
+		false,
+		"",
+		"",
+		nil,
+		false,
+		true,
+		true)
+	assert.Error(t, err)
+}
+
 func Test_badIncludeFail(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/testdata/template", "", false, "", "", []string{"./internal/testdata/src/failureTests/badInclude.tpl.got"})
+	err := got.Run("./internal/testdata/template",
+		"",
+		false,
+		"",
+		"",
+		[]string{"./internal/testdata/src/failureTests/badInclude.tpl.got"},
+		false,
+		false,
+		true)
 	assert.Error(t, err)
 }
 
 func Test_badInclude2Fail(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/badInclude2.tpl.got"})
+	err := got.Run("./internal/testdata/template",
+		"",
+		true,
+		"",
+		"",
+		[]string{"./internal/testdata/src/failureTests/badInclude2.tpl.got"},
+		false,
+		false,
+		true)
+
 	assert.Error(t, err)
 }
 
 func Test_tooManyParams(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/testdata/template", "", false, "", "", []string{"./internal/testdata/src/failureTests/tooManyParams.tpl.got"})
+	err := got.Run("./internal/testdata/template",
+		"",
+		false,
+		"",
+		"",
+		[]string{"./internal/testdata/src/failureTests/tooManyParams.tpl.got"},
+		false,
+		false,
+		true)
+
 	assert.Error(t, err)
 }
 
 func Test_badGo2(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/badGo.tpl.got"})
+	err := got.Run("./internal/testdata/template",
+		"",
+		true,
+		"",
+		"",
+		[]string{"./internal/testdata/src/failureTests/badGo.tpl.got"},
+		false,
+		false,
+		true)
+
 	assert.Error(t, err)
 }
 
 func Test_badBlock(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/badBlock.tpl.got"})
+	err := got.Run("./internal/testdata/template",
+		"",
+		true,
+		"",
+		"",
+		[]string{"./internal/testdata/src/failureTests/badBlock.tpl.got"},
+		false,
+		false,
+		true)
+
 	assert.Error(t, err)
 }
 
 func Test_tooManyEnds(t *testing.T) {
 	resetTemplates()
 
-	err := got.Run("./internal/testdata/template", "", true, "", "", []string{"./internal/testdata/src/failureTests/tooManyEnds.tpl.got"})
+	err := got.Run("./internal/testdata/template",
+		"",
+		true,
+		"",
+		"",
+		[]string{"./internal/testdata/src/failureTests/tooManyEnds.tpl.got"},
+		false,
+		false,
+		true)
+
 	assert.Error(t, err)
 }
 
@@ -121,4 +258,15 @@ func resetTemplates() {
 	for _, f := range files {
 		_ = os.Remove(f)
 	}
+
+	files, _ = filepath.Glob("./internal/testdata/src/recurse/*.tpl.go")
+	for _, f := range files {
+		_ = os.Remove(f)
+	}
+
+	files, _ = filepath.Glob("./internal/testdata/src/recurse/rdir/*.tpl.go")
+	for _, f := range files {
+		_ = os.Remove(f)
+	}
+
 }

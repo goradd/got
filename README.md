@@ -1,5 +1,5 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/goradd/got.svg)](https://pkg.go.dev/github.com/goradd/got)
-![Build Status](https://img.shields.io/github/workflow/status/goradd/got/Go)
+![Build Status](https://img.shields.io/github/actions/workflow/status/goradd/got/go.yml?branch=main)
 [![codecov](https://codecov.io/gh/goradd/got/branch/main/graph/badge.svg?token=FHU0NR2N1V)](https://codecov.io/gh/goradd/got)
 [![Go Report Card](https://goreportcard.com/badge/github.com/goradd/got)](https://goreportcard.com/report/github.com/goradd/got)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go#template-engines)
@@ -90,6 +90,10 @@ options:
 	     current directory, the correct go.mod file will be searched to know where to look 
 	     for include files.
 	- d  directory: When using the -t option, will specify a directory to search.
+	- v  verbose: Prints information about files being processed
+	- r  recursive: Recursively processes directories. Used with the -t option and possibley -d.
+	- f  force: Output files are normally not over-written if they are newer than the input file.
+	     This otpion will force all input files to over-write the output files.
 ```
 If a path described above starts with a module path, the actual disk location 
 will be substituted.
