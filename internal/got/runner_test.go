@@ -7,7 +7,7 @@ import (
 
 func Test_getRecursiveDirectories(t *testing.T) {
 	dirs, _ := getRecursiveDirectories("../testdata")
-	assert.Len(t, dirs, 13)
+	assert.Len(t, dirs, 15)
 }
 
 func Test_fileIsNewer(t *testing.T) {
