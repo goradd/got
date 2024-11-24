@@ -8,5 +8,8 @@
 # Test binary, build with `go test -c`
 *.test
 
+#OSs
+.DS_Store
+
 #IDEs
 .idea

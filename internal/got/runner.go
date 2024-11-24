@@ -41,6 +41,10 @@ func Run(outDir string,
 		return err
 	}
 
+	if outDir, err = filepath.Abs(outDir); err != nil {
+		return err
+	}
+
 	if inputDirectory != "" {
 		inputDirectory = getRealPath(inputDirectory)
 		if inputDirectory[len(inputDirectory)-1] != filepath.Separator {
@@ -230,6 +234,10 @@ func getRealPath(path string) string {
 		log.Fatal(err)
 	}
 	newPath = filepath.FromSlash(newPath)
+	newPath, err = filepath.Abs(path)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return newPath
 }
 
@@ -295,6 +303,17 @@ func gatherFiles(inFiles []string, inputDir string, outputDir string, suffix str
 			f, _ := filepath.Glob(dir + "/*." + suffix)
 			inFiles = append(inFiles, f...)
 		}
+	} else {
+		// anchor input files
+		var newFiles []string
+		for _, f := range inFiles {
+			matches, _ := filepath.Glob(f)
+			for _, m := range matches {
+				m, _ = filepath.Abs(m)
+				newFiles = append(newFiles, m)
+			}
+		}
+		inFiles = newFiles
 	}
 
 	if force {
