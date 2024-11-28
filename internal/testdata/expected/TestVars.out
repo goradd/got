@@ -9,6 +9,10 @@ Boolean: true
 Escaped: This&lt;&gt;
 That: That<br>
 The Other
+
+Literal string: "Me"
+Literal int: -5
+Type string: string
     Num = 0
     Num = 1
     Num = 2

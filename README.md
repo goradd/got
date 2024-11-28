@@ -267,11 +267,9 @@ that returns a value.
     {{w or {{bytes            A byte slice                    {{ The value is: {{w byteSliceVar }} }}
     {{v or {{stringer or      Any value that implements       {{ The value is: {{objVar}} }}
        {{goIdentifier}}       the Stringer interface.
-    {{#v                      The value as a Go literal       {{ The value is: {{#v objVar}} }}
-    {{T                       The Go type of the value        {{ The type is: {{T objVar}} }}
 
-The last few tags can be slower than the other tags since they use fmt.Sprint() internally, 
-so if this is a heavily used template,  avoid it. Usually you will not notice a speed difference though,
+The last tag can be slower than the other tags since they use fmt.Sprint() internally, 
+so if this is a heavily used template, avoid it. Usually you will not notice a speed difference though,
 and the third option can be very convenient. This third option is simply any go variable surrounded by mustaches 
 with no spaces.
 
@@ -321,6 +319,14 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 {{=e Tester(toPrint) }}
 }
 ```
+
+### Generating Go Code
+
+These tags are useful if your templates will be generating Go code.
+
+    {{L      The value as a Go literal (uses %#v from fmt package)
+    {{T      The Go type of the value (uses %T from the fmt package)
+
 
 ### Include Files
 #### Include a GoT source file

@@ -18,6 +18,10 @@ Boolean: {{b 2 == 4/2}}
 
 Escaped: {{!= "This<>"}}
 That: {{!h "That\nThe Other"}}
+
+Literal string: {{L givesString() }}
+Literal int: {{L givesInt() }}
+Type string: {{T givesString() }}
 }}
 
 // Test for newlines here

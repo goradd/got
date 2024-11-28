@@ -80,9 +80,7 @@ func Run(outDir string,
 		f = filepath.FromSlash(f)
 		dir, _ := filepath.Split(f)
 		if dir != "" {
-			if err = os.Chdir(dir); err != nil {
-				return fmt.Errorf("could not change to directory %s:%s", dir, err.Error())
-			}
+			dir, _ = filepath.Abs(dir)
 		}
 
 		var includeFiles []string
@@ -121,11 +119,6 @@ func Run(outDir string,
 
 		err = processFile(f, outDir2, asts, runImports)
 
-		if dir != "" {
-			if err2 := os.Chdir(cwd); err2 != nil {
-				return fmt.Errorf("could not change to cwd %s:%s", cwd, err2.Error())
-			}
-		}
 		if err != nil {
 			return err
 		}
