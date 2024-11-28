@@ -41,10 +41,6 @@ func Run(outDir string,
 		return err
 	}
 
-	if outDir, err = filepath.Abs(outDir); err != nil {
-		return err
-	}
-
 	if inputDirectory != "" {
 		inputDirectory = getRealPath(inputDirectory)
 		if inputDirectory[len(inputDirectory)-1] != filepath.Separator {
@@ -234,10 +230,6 @@ func getRealPath(path string) string {
 		log.Fatal(err)
 	}
 	newPath = filepath.FromSlash(newPath)
-	newPath, err = filepath.Abs(path)
-	if err != nil {
-		log.Fatal(err)
-	}
 	return newPath
 }
 

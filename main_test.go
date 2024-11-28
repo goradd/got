@@ -34,7 +34,8 @@ func TestGot(t *testing.T) {
 	main()
 
 	// main seems to be changing working dir
-	_ = os.Chdir(curDir)
+	curDir2, _ := os.Getwd()
+	assert.Equal(t, curDir, curDir2)
 
 	if _, err := sys.ExecuteShellCommand(cmd); err != nil {
 		if e, ok := err.(*exec.Error); ok {
@@ -89,12 +90,13 @@ func TestRecursiveGot(t *testing.T) {
 	assert.NoError(t, err)
 
 	// main seems to be changing working dir
-	_ = os.Chdir(curDir)
+	curDir2, _ := os.Getwd()
+	assert.Equal(t, curDir, curDir2)
 
 	// verify outputs were created
 
-	files1, _ := filepath.Glob(outPath1 + string(os.PathSeparator) + "*.go")
-	files2, _ := filepath.Glob(outPath2 + string(os.PathSeparator) + "*.go")
+	files1, _ := filepath.Glob(filepath.Join(outPath1, "*.go"))
+	files2, _ := filepath.Glob(filepath.Join(outPath2, "*.go"))
 
 	assert.Len(t, files1, 1)
 	assert.Equal(t, "r1.tpl.go", filepath.Base(files1[0]))

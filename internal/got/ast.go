@@ -106,6 +106,10 @@ func (a *astWalker) walk(item tokenItem) error {
 	case itemInterface:
 		fallthrough
 	case itemBytes:
+		fallthrough
+	case itemGoLiteral:
+		fallthrough
+	case itemGoType:
 		return a.outputValue(item)
 
 	case itemGoErr:
@@ -220,6 +224,10 @@ func (a *astWalker) outputValue(item tokenItem) (err error) {
 		formatter = `strconv.FormatFloat(float64(%s), 'g', -1, 64)`
 	case itemBytes:
 		formatter = `string(%s[:])`
+	case itemGoLiteral:
+		formatter = `fmt.Sprintf("%%#v", %s)`
+	case itemGoType:
+		formatter = `fmt.Sprintf("%%T", %s)`
 	default:
 		formatter = `%s`
 	}
