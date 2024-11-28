@@ -8,6 +8,10 @@
 
 {{= "Evaluates to a string" }}
 
+type MyStruct struct {
+    a int
+}
+
 {{
 Here is a number: {{i givesInt() }}
 And another: {{u givesUint() }}
@@ -22,6 +26,8 @@ That: {{!h "That\nThe Other"}}
 Literal string: {{L givesString() }}
 Literal int: {{L givesInt() }}
 Type string: {{T givesString() }}
+Type struct: {{T MyStruct{a:1} }}
+Type struct 2: {{PT MyStruct{a:1} }}
 }}
 
 // Test for newlines here

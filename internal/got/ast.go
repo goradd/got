@@ -110,6 +110,8 @@ func (a *astWalker) walk(item tokenItem) error {
 	case itemGoLiteral:
 		fallthrough
 	case itemGoType:
+		fallthrough
+	case itemGoTypeWithPackage:
 		return a.outputValue(item)
 
 	case itemGoErr:
@@ -228,6 +230,10 @@ func (a *astWalker) outputValue(item tokenItem) (err error) {
 		formatter = `fmt.Sprintf("%%#v", %s)`
 	case itemGoType:
 		formatter = `fmt.Sprintf("%%T", %s)`
+		writer = `io.WriteString(_w, func()string {a,b,f := strings.Cut(%s, "."); if f {return b} else {return a}}())`
+	case itemGoTypeWithPackage:
+		formatter = `fmt.Sprintf("%%T", %s)`
+
 	default:
 		formatter = `%s`
 	}

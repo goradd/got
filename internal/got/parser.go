@@ -104,6 +104,8 @@ func (p *parser) parseRunItem(item tokenItem) tokenItem {
 		fallthrough
 	case itemGoType:
 		fallthrough
+	case itemGoTypeWithPackage:
+		fallthrough
 	case itemBytes:
 		fallthrough
 	case itemGoErr:

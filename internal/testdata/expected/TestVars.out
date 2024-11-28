@@ -13,6 +13,8 @@ The Other
 Literal string: "Me"
 Literal int: -5
 Type string: string
+Type struct: MyStruct
+Type struct 2: template.MyStruct
     Num = 0
     Num = 1
     Num = 2

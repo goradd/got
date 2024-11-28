@@ -325,8 +325,15 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 These tags are useful if your templates will be generating Go code.
 
     {{L      The value as a Go literal (uses %#v from fmt package)
-    {{T      The Go type of the value (uses %T from the fmt package)
+    {{T      The Go type of the value without package name (uses %T from the fmt package)
+    {{PT     The Go type of the value WITH the package name (uses %T from the fmt package)
 
+The {{L tag will quote strings, but not quote numbers.
+
+The {{PT tag will produce the Go type with a package name if given. Built in types will not
+have a package name, but standard library types will. For example, a time.Time type will 
+result in the string "time.Time". The {{T tag will strip off the package name if there is one
+in the value's type.
 
 ### Include Files
 #### Include a GoT source file
