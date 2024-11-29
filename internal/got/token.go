@@ -55,6 +55,9 @@ const (
 	itemFloat
 	itemInterface
 	itemBytes
+	itemGoLiteral
+	itemGoType
+	itemGoTypeWithPackage
 
 	itemComment
 
@@ -124,6 +127,9 @@ func init() {
 	tokens["{{!stringer,err"] = tokenItem{typ: itemInterface, escaped: true, withError: true}
 	tokens["{{ve"] = tokenItem{typ: itemInterface, escaped: false, withError: true}
 	tokens["{{stringer,err"] = tokenItem{typ: itemInterface, escaped: false, withError: true}
+	tokens["{{L"] = tokenItem{typ: itemGoLiteral, escaped: false, withError: false}
+	tokens["{{T"] = tokenItem{typ: itemGoType, escaped: false, withError: false}
+	tokens["{{PT"] = tokenItem{typ: itemGoTypeWithPackage, escaped: false, withError: false}
 
 	tokens["{{#"] = tokenItem{typ: itemComment}
 	tokens["{{//"] = tokenItem{typ: itemComment}

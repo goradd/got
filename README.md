@@ -76,7 +76,8 @@ got [options] [files]
 
 options:
 	- o: The output directory. If not specified, files will be output at the same 
-	     location as the corresponding template.
+	     location as the corresponding template. If using the -r option, files will
+	     be output in subdirectories matching the directory names of the input files.
 	- t  fileType: If set, will process all files in the current directory with this suffix. 
 	     If not set, you must specify the files at the end of the command line.
 	- i: Run `goimports` on the output files, rather than `go fmt`
@@ -91,9 +92,9 @@ options:
 	     for include files.
 	- d  directory: When using the -t option, will specify a directory to search.
 	- v  verbose: Prints information about files being processed
-	- r  recursive: Recursively processes directories. Used with the -t option and possibley -d.
+	- r  recursive: Recursively processes directories. Used with the -t option and possibly -d.
 	- f  force: Output files are normally not over-written if they are newer than the input file.
-	     This otpion will force all input files to over-write the output files.
+	     This option will force all input files to over-write the output files.
 ```
 If a path described above starts with a module path, the actual disk location 
 will be substituted.
@@ -258,18 +259,17 @@ that returns a value.
 
     Tag                       Description                     Example
     
-    {{=, {{s, or  {{string    Send a go string to output      {{= fmt.Sprintf("I am %s", sVar) }}
-    {{i or {{int              Send an int to output           {{ The value is: {{i iVar }} }}
-    {{u or {{uint             Send an unsigned Integer        {{ The value is: {{u uVar }} }}
-    {{f or {{float            Send a floating point number    {{ The value is: {{f fVar }} }}
+    {{=, {{s, or  {{string    A go string                     {{= fmt.Sprintf("%9.2f", fVar) }}
+    {{i or {{int              An int                          {{ The value is: {{i iVar }} }}
+    {{u or {{uint             A uint                          {{ The value is: {{u uVar }} }}
+    {{f or {{float            A floating point number         {{ The value is: {{f fVar }} }}
     {{b or {{bool             A boolean ("true" or "false")   {{ The value is: {{b bVar }} }}
     {{w or {{bytes            A byte slice                    {{ The value is: {{w byteSliceVar }} }}
-    {{v or {{stringer or      Send any value that implements  {{ The value is: {{objVar}} }}
+    {{v or {{stringer or      Any value that implements       {{ The value is: {{objVar}} }}
        {{goIdentifier}}       the Stringer interface.
 
-
-This last tag can be slower than the other tags since it uses fmt.Sprint() internally, 
-so if this is a heavily used template,  avoid it. Usually you will not notice a speed difference though,
+The last tag can be slower than the other tags since they use fmt.Sprint() internally, 
+so if this is a heavily used template, avoid it. Usually you will not notice a speed difference though,
 and the third option can be very convenient. This third option is simply any go variable surrounded by mustaches 
 with no spaces.
 
@@ -319,6 +319,21 @@ func OutTemplate(toPrint string, buf bytes.Buffer) error {
 {{=e Tester(toPrint) }}
 }
 ```
+
+### Generating Go Code
+
+These tags are useful if your templates will be generating Go code.
+
+    {{L      The value as a Go literal (uses %#v from fmt package)
+    {{T      The Go type of the value without package name (uses %T from the fmt package)
+    {{PT     The Go type of the value WITH the package name (uses %T from the fmt package)
+
+The {{L tag will quote strings, but not quote numbers.
+
+The {{PT tag will produce the Go type with a package name if given. Built in types will not
+have a package name, but standard library types will. For example, a time.Time type will 
+result in the string "time.Time". The {{T tag will strip off the package name if there is one
+in the value's type.
 
 ### Include Files
 #### Include a GoT source file
