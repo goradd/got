@@ -12,6 +12,24 @@ import (
 	"github.com/goradd/gofile/pkg/sys"
 )
 
+// Predefined block values
+const (
+	blockTemplatePath   = "templatePath"
+	blockTemplateName   = "templateName"
+	blockTemplateRoot   = "templateRoot"
+	blockTemplateParent = "templateParent"
+
+	blockOutPath   = "outPath"
+	blockOutName   = "outName"
+	blockOutRoot   = "outRoot"
+	blockOutParent = "outParent"
+
+	blockIncludePath   = "includePath"
+	blockIncludeName   = "includeName"
+	blockIncludeRoot   = "includeRoot"
+	blockIncludeParent = "includeParent"
+)
+
 type namedBlockEntry struct {
 	text       string
 	paramCount int
@@ -135,6 +153,11 @@ func processFile(file, outDir string, asts []astType, runImports bool) error {
 	}
 
 	// Default named block values
+	namedBlocks[blockIncludePath] = namedBlockEntry{"", 0, locationRef{}}
+	namedBlocks[blockIncludeName] = namedBlockEntry{"", 0, locationRef{}}
+	namedBlocks[blockIncludeRoot] = namedBlockEntry{"", 0, locationRef{}}
+	namedBlocks[blockIncludeParent] = namedBlockEntry{"", 0, locationRef{}}
+
 	file, _ = filepath.Abs(file)
 	root := strings.TrimSuffix(filepath.Base(file), filepath.Ext(file))
 	for {
@@ -145,10 +168,10 @@ func processFile(file, outDir string, asts []astType, runImports bool) error {
 		root = strings.TrimSuffix(root, ext)
 	}
 
-	namedBlocks["templatePath"] = namedBlockEntry{file, 0, locationRef{}}
-	namedBlocks["templateName"] = namedBlockEntry{filepath.Base(file), 0, locationRef{}}
-	namedBlocks["templateRoot"] = namedBlockEntry{root, 0, locationRef{}}
-	namedBlocks["templateParent"] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
+	namedBlocks[blockTemplatePath] = namedBlockEntry{file, 0, locationRef{}}
+	namedBlocks[blockTemplateName] = namedBlockEntry{filepath.Base(file), 0, locationRef{}}
+	namedBlocks[blockTemplateRoot] = namedBlockEntry{root, 0, locationRef{}}
+	namedBlocks[blockTemplateParent] = namedBlockEntry{filepath.Base(filepath.Dir(file)), 0, locationRef{}}
 
 	newPath, _ = filepath.Abs(newPath)
 	root = strings.TrimSuffix(filepath.Base(newPath), filepath.Ext(newPath))
@@ -160,10 +183,10 @@ func processFile(file, outDir string, asts []astType, runImports bool) error {
 		root = strings.TrimSuffix(root, ext)
 	}
 
-	namedBlocks["outPath"] = namedBlockEntry{newPath, 0, locationRef{}}
-	namedBlocks["outName"] = namedBlockEntry{filepath.Base(newPath), 0, locationRef{}}
-	namedBlocks["outRoot"] = namedBlockEntry{root, 0, locationRef{}}
-	namedBlocks["outParent"] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0, locationRef{}}
+	namedBlocks[blockOutPath] = namedBlockEntry{newPath, 0, locationRef{}}
+	namedBlocks[blockOutName] = namedBlockEntry{filepath.Base(newPath), 0, locationRef{}}
+	namedBlocks[blockOutRoot] = namedBlockEntry{root, 0, locationRef{}}
+	namedBlocks[blockOutParent] = namedBlockEntry{filepath.Base(filepath.Dir(newPath)), 0, locationRef{}}
 
 	a, err := buildAst(file, namedBlocks)
 	if err != nil {

@@ -400,13 +400,19 @@ The following fragments are predefined:
 * `{{templateName}}` is the base name of the template file being processed, including any extensions
 * `{{templateRoot}}` is the base name of the template file being processed without any extensions
 * `{{templateParent}}` is the directory name of the template file being processed, without the preceeding path
+* `{{includePath}}` is the full path of the file that the includePath fragment appears in.
+* `{{includeName}}` is the base name of the file that the includeName fragment appears in.
+* `{{includeRoot}}` is the base name of the file that the includeRoot fragment appears in without any extensions.
+* `{{includeParent}}` is the directory name of the file that the includeParent fragment appears in without any extensions.
 * `{{outPath}}` is the full path of the output file being written
 * `{{outName}}` is the base name of the output file being written, including any extensions
 * `{{outRoot}}` is the base name of the output file being written without any extensions
 * `{{outParent}}` is the directory name of the output file being written, without the preceeding path
 
-Note that if you are using these in an included file, these will refer to the parent file. Multiple
-levels of includes will return the information for the top level file being processed. 
+The template* fragments refer to the top level file, the one sent to the got command to process,
+while the include* fragments refer to the file being processed currently. For example, if the
+"a.tmpl" file included the "b.tmpl" file, then {{includeName}} in the b.tmpl file would
+produce "b.tmpl", while {{templateName}} in the b.tmpl file would produce "a.tmpl".
 
 #### Example
 ```
