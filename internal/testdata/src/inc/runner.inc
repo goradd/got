@@ -17,3 +17,4 @@ func {{name}}(_w io.Writer) (err error) {
 func init() {
     registry.RegisterTest({{name}}, "{{name}}")
 }
+

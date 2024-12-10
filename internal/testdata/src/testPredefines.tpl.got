@@ -11,6 +11,13 @@
 {{outName}}
 {{outRoot}}
 {{outParent}}
+{{# making sure defaults are there }}
+{{includeName}}
+{{includeRoot}}
+{{includeParent}}
+
+{{: "predef.inc" }}
+
 }}
 {{end body}}
 
