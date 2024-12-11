@@ -48,7 +48,37 @@ func lexFile(fileName string,
 		namedBlocks:   namedBlocks, // use named blocks passed in. This will add to the parent map.
 	}
 
-	go l.run()
+	go func() {
+		// save and restore the include file info
+
+		fp, _ := filepath.Abs(fileName)
+		root := strings.TrimSuffix(filepath.Base(fp), filepath.Ext(fp))
+		for {
+			ext := filepath.Ext(root)
+			if ext == "" {
+				break
+			}
+			root = strings.TrimSuffix(root, ext)
+		}
+
+		incPath := namedBlocks[blockIncludePath].text
+		incName := namedBlocks[blockIncludeName].text
+		incRoot := namedBlocks[blockIncludeRoot].text
+		incParent := namedBlocks[blockIncludeParent].text
+
+		namedBlocks[blockIncludePath] = namedBlockEntry{fp, 0, locationRef{}}
+		namedBlocks[blockIncludeName] = namedBlockEntry{filepath.Base(fp), 0, locationRef{}}
+		namedBlocks[blockIncludeRoot] = namedBlockEntry{root, 0, locationRef{}}
+		namedBlocks[blockIncludeParent] = namedBlockEntry{filepath.Base(filepath.Dir(fp)), 0, locationRef{}}
+
+		l.run()
+
+		// restore
+		namedBlocks[blockIncludePath] = namedBlockEntry{incPath, 0, locationRef{}}
+		namedBlocks[blockIncludeName] = namedBlockEntry{incName, 0, locationRef{}}
+		namedBlocks[blockIncludeRoot] = namedBlockEntry{incRoot, 0, locationRef{}}
+		namedBlocks[blockIncludeParent] = namedBlockEntry{incParent, 0, locationRef{}}
+	}()
 	return l
 }
 
