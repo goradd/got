@@ -25,6 +25,7 @@ func TestSub(_w io.Writer) (err error) {
 	if err = myTest2(_w); err != nil {return}
 	if err = myTest3(_w); err != nil {return}
 	if err = myTest4(_w); err != nil {return}
+	if err = myTest5(_w); err != nil {return}
 	return
 }
 
@@ -58,6 +59,21 @@ Not Substituted:
 }}
 return
 }
+
+{{define fourth 2}}
+$1,$2
+{{end fourth}}
+
+func myTest5(_w io.Writer) (err error) {
+{{
+Substituted:
+{{fourth "You", `"Me"`}}
+Not Substituted:
+{{fourth}}
+}}
+return
+}
+
 
 func init() {
     registry.RegisterTest(TestSub, "TestSub")

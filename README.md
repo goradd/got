@@ -224,7 +224,7 @@ func staticTest(_w io.Writer) {
 
 }
 
-func translateTest(t Translater, buf *bytes.Buffer) {
+func translateTest(t Translater, _w io.Writer) {
 
 {{t Translate me to some language }}
 
@@ -562,7 +562,7 @@ import {
 }
 
 
-func writeTemplate(ctx context.Context, buf *bytes.Buffer) {
+func writeTemplate(ctx context.Context, _w io.Writer) {
 
 {{# Define the body that will be inserted into the template }}
 {{< body }}

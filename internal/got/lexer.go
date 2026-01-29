@@ -524,14 +524,16 @@ func splitParams(paramString string) (params []string, err error) {
 	s.Init(strings.NewReader(paramString))
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 		text := s.TokenText()
-		if len(text) > 0 && text[0] == '"' && (len(text) == 1 || text[len(text)-1] != '"') {
+		if len(text) > 0 &&
+			(text[0] == '"' && (len(text) == 1 || text[len(text)-1] != '"') ||
+				(text[0] == '`' && (len(text) == 1 || text[len(text)-1] != '`'))) {
 			err = fmt.Errorf("parameter has a beginning quote with no ending quote: %s", text)
 			return
 		}
 		if text == "," {
 			currentItem = strings.TrimSpace(currentItem)
 			if currentItem != "" {
-				if currentItem[0] == '"' {
+				if currentItem[0] == '"' || currentItem[0] == '`' {
 					currentItem, err = strconv.Unquote(currentItem)
 					if err != nil {
 						return
@@ -548,7 +550,7 @@ func splitParams(paramString string) (params []string, err error) {
 		}
 	}
 	if currentItem != "" {
-		if currentItem[0] == '"' {
+		if currentItem[0] == '"' || currentItem[0] == '`' {
 			currentItem, err = strconv.Unquote(currentItem)
 			if err != nil {
 				return

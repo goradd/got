@@ -293,7 +293,7 @@ func (p *parser) parseIf(item tokenItem) (items []tokenItem) {
 
 	default:
 		item.typ = itemError
-		item.val = "unexpected end block item"
+		item.val = "unexpected end block item: " + endItem.val
 		return []tokenItem{item}
 	}
 }

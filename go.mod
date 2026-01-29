@@ -1,8 +1,8 @@
 module github.com/goradd/got
 
 require (
-	github.com/goradd/gofile v1.2.0
-	github.com/stretchr/testify v1.8.4
+	github.com/goradd/gofile v1.2.1
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
